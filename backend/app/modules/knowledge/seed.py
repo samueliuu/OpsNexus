@@ -1,0 +1,648 @@
+"""
+Knowledge 模块数据种子：包含 Dell / HPE / Lenovo / Huawei 四大品牌的
+SEL 事件码和固件兼容性基础数据。
+"""
+
+import uuid
+from datetime import datetime, timezone
+from typing import Any, Dict, List
+
+from app.modules.knowledge.models import FirmwareCompatibility, SELEventCode
+
+
+# ---------------------------------------------------------------------------
+# SEL 事件码种子数据
+# ---------------------------------------------------------------------------
+
+SEL_SEED_DATA: List[Dict[str, Any]] = [
+    # ======================== Dell ========================
+    {
+        "id": uuid.uuid4(),
+        "brand": "Dell",
+        "event_code": "E1000",
+        "sensor_type": "Voltage",
+        "severity": "critical",
+        "description": "系统电压超出正常范围，可能导致系统不稳定或意外关机",
+        "recommended_action": "检查电源供应是否正常，确认 PSU 线缆连接牢固；如问题持续，更换电源单元",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Dell",
+        "event_code": "E1001",
+        "sensor_type": "Temperature",
+        "severity": "critical",
+        "description": "CPU 温度超过临界阈值，系统即将执行热保护关机",
+        "recommended_action": "检查散热风扇运行状态，清理散热器灰尘，确认导热硅脂有效；必要时更换散热模组",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Dell",
+        "event_code": "E1002",
+        "sensor_type": "Fan",
+        "severity": "warning",
+        "description": "系统风扇转速低于最低阈值，散热效率下降",
+        "recommended_action": "检查风扇是否被异物阻挡，确认风扇电源连接正常；如风扇故障则更换",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Dell",
+        "event_code": "E1003",
+        "sensor_type": "Memory",
+        "severity": "critical",
+        "description": "检测到不可纠正的内存错误（UECC），系统稳定性受影响",
+        "recommended_action": "运行 Dell 内存诊断工具，定位故障 DIMM 并更换；确保内存条与主板兼容",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Dell",
+        "event_code": "E1004",
+        "sensor_type": "Power Supply",
+        "severity": "critical",
+        "description": "电源单元故障或输出功率不足，系统可能降级运行",
+        "recommended_action": "检查 PSU 状态指示灯，确认输入电压正常；更换故障电源单元",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Dell",
+        "event_code": "E1005",
+        "sensor_type": "Drive",
+        "severity": "warning",
+        "description": "硬盘预测性故障警告（SMART），驱动器即将失效",
+        "recommended_action": "立即备份该磁盘数据，准备替换硬盘；配置 RAID 重建策略",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Dell",
+        "event_code": "E1006",
+        "sensor_type": "System Board",
+        "severity": "warning",
+        "description": "主板 BMC 通信异常，iDRAC 可能无法正常管理",
+        "recommended_action": "重启 iDRAC 模块（racadm racreset），检查固件版本；如问题持续，升级 iDRAC 固件",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Dell",
+        "event_code": "E1007",
+        "sensor_type": "Watchdog",
+        "severity": "critical",
+        "description": "系统看门狗定时器超时，OS 可能无响应",
+        "recommended_action": "检查操作系统日志定位挂起原因；确认驱动程序和固件为最新版本",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Dell",
+        "event_code": "E1008",
+        "sensor_type": "PCIe",
+        "severity": "warning",
+        "description": "PCIe 插槽设备链路降级，带宽低于预期",
+        "recommended_action": "重新插拔 PCIe 设备，检查金手指是否氧化；确认设备与插槽兼容",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Dell",
+        "event_code": "E1009",
+        "sensor_type": "Battery",
+        "severity": "warning",
+        "description": "CMOS 电池电压低，BIOS 设置可能在断电后丢失",
+        "recommended_action": "更换主板 CR2032 电池，更新 BIOS 设置并保存",
+    },
+    # ======================== HPE ========================
+    {
+        "id": uuid.uuid4(),
+        "brand": "HPE",
+        "event_code": "H2000",
+        "sensor_type": "Temperature",
+        "severity": "critical",
+        "description": "iLO 检测到 CPU 温度超过警告阈值",
+        "recommended_action": "检查机箱风扇和散热模块，确认风道无阻塞；升级 iLO 固件以优化风扇策略",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "HPE",
+        "event_code": "H2001",
+        "sensor_type": "Power Supply",
+        "severity": "critical",
+        "description": "冗余电源配置中一个 PSU 失效，系统运行在非冗余模式",
+        "recommended_action": "更换故障 PSU，确认电源线缆连接正常；检查 PDU 输出",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "HPE",
+        "event_code": "H2002",
+        "sensor_type": "Memory",
+        "severity": "warning",
+        "description": "内存模块检测到可纠正错误率上升，接近阈值",
+        "recommended_action": "运行 HPE Insight Diagnostics 内存测试，准备替换问题 DIMM",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "HPE",
+        "event_code": "H2003",
+        "sensor_type": "Fan",
+        "severity": "critical",
+        "description": "系统风扇模块完全失效，散热严重不足",
+        "recommended_action": "立即更换故障风扇模块，避免系统过热关机",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "HPE",
+        "event_code": "H2004",
+        "sensor_type": "Drive",
+        "severity": "critical",
+        "description": "Smart Array 控制器检测到逻辑驱动器故障",
+        "recommended_action": "检查物理磁盘状态，替换故障磁盘并重建逻辑驱动器",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "HPE",
+        "event_code": "H2005",
+        "sensor_type": "NIC",
+        "severity": "warning",
+        "description": "网络接口链路状态频繁切换，可能存在连接不稳定",
+        "recommended_action": "检查网线质量和端口状态，确认交换机配置匹配；更新 NIC 固件",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "HPE",
+        "event_code": "H2006",
+        "sensor_type": "Processor",
+        "severity": "critical",
+        "description": "CPU 内部错误（IERR），可能影响计算结果正确性",
+        "recommended_action": "检查 CPU 是否超频，确认散热正常；如问题反复出现，更换 CPU",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "HPE",
+        "event_code": "H2007",
+        "sensor_type": "System Board",
+        "severity": "warning",
+        "description": "iLO 管理处理器响应超时，远程管理功能受限",
+        "recommended_action": "通过物理开关重置 iLO，检查 iLO 固件版本并升级",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "HPE",
+        "event_code": "H2008",
+        "sensor_type": "Storage",
+        "severity": "warning",
+        "description": "Smart Array 控制器缓存模块电量低，写回缓存功能禁用",
+        "recommended_action": "检查缓存模块电池/电容状态，必要时更换；临时切换为直写模式",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "HPE",
+        "event_code": "H2009",
+        "sensor_type": "Voltage",
+        "severity": "critical",
+        "description": "主板 VRM 电压调节模块输出异常",
+        "recommended_action": "检查 PSU 输出电压，确认负载未超标；如 VRM 故障需更换主板",
+    },
+    # ======================== Lenovo ========================
+    {
+        "id": uuid.uuid4(),
+        "brand": "Lenovo",
+        "event_code": "L3000",
+        "sensor_type": "Temperature",
+        "severity": "critical",
+        "description": "XCC 检测到 DIMM 温度超过安全阈值",
+        "recommended_action": "检查内存条散热片和机箱风扇，确认风道通畅；降低内存工作频率",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Lenovo",
+        "event_code": "L3001",
+        "sensor_type": "Fan",
+        "severity": "warning",
+        "description": "风扇转速异常波动，可能存在轴承磨损",
+        "recommended_action": "监控风扇转速趋势，准备备件；如波动加剧则更换风扇",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Lenovo",
+        "event_code": "L3002",
+        "sensor_type": "Power Supply",
+        "severity": "critical",
+        "description": "电源输入电压超出允许范围",
+        "recommended_action": "检查机房供电和 UPS 状态，确认 PDU 输出电压正常",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Lenovo",
+        "event_code": "L3003",
+        "sensor_type": "Memory",
+        "severity": "critical",
+        "description": "内存模块检测到多位不可纠正错误",
+        "recommended_action": "立即隔离故障 DIMM，运行 Lenovo 内存诊断；更换故障内存条",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Lenovo",
+        "event_code": "L3004",
+        "sensor_type": "Drive",
+        "severity": "warning",
+        "description": "NVMe SSD 剩余寿命低于 10%",
+        "recommended_action": "规划 SSD 更换，备份关键数据；配置热备盘",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Lenovo",
+        "event_code": "L3005",
+        "sensor_type": "PCIe",
+        "severity": "critical",
+        "description": "PCIe 设备出现不可纠正的错误（AER）",
+        "recommended_action": "重新插拔 PCIe 卡，检查插槽和设备兼容性；更新设备固件",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Lenovo",
+        "event_code": "L3006",
+        "sensor_type": "System Board",
+        "severity": "warning",
+        "description": "XCC 管理控制器固件降级运行，功能受限",
+        "recommended_action": "升级 XCC 固件到最新稳定版本",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Lenovo",
+        "event_code": "L3007",
+        "sensor_type": "Processor",
+        "severity": "warning",
+        "description": "CPU 功耗接近 TDP 限制，性能可能被降频保护",
+        "recommended_action": "检查工作负载是否异常，优化散热条件；确认 BIOS 功耗设置",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Lenovo",
+        "event_code": "L3008",
+        "sensor_type": "Watchdog",
+        "severity": "critical",
+        "description": "系统看门狗触发，操作系统无响应已被强制重启",
+        "recommended_action": "分析操作系统崩溃转储，排查驱动或内核问题；确认固件和驱动版本兼容",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Lenovo",
+        "event_code": "L3009",
+        "sensor_type": "Battery",
+        "severity": "warning",
+        "description": "RAID 控制器缓存电池电量不足",
+        "recommended_action": "更换缓存电池模块，确保写回策略正常工作",
+    },
+    # ======================== Huawei ========================
+    {
+        "id": uuid.uuid4(),
+        "brand": "Huawei",
+        "event_code": "HW4000",
+        "sensor_type": "Temperature",
+        "severity": "critical",
+        "description": "iBMC 检测到主板温度超过告警阈值",
+        "recommended_action": "检查机房空调和机箱风扇，确认进风口无遮挡；升级 iBMC 以优化温控策略",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Huawei",
+        "event_code": "HW4001",
+        "sensor_type": "Power Supply",
+        "severity": "critical",
+        "description": "电源模块输出功率异常，负载均衡失效",
+        "recommended_action": "检查电源模块状态，确认各 PSU 负载分配正常；更换故障 PSU",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Huawei",
+        "event_code": "HW4002",
+        "sensor_type": "Fan",
+        "severity": "warning",
+        "description": "风扇模块通信中断，无法获取转速信息",
+        "recommended_action": "检查风扇背板连接，重新插拔风扇模块；更换故障风扇",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Huawei",
+        "event_code": "HW4003",
+        "sensor_type": "Memory",
+        "severity": "critical",
+        "description": "内存条检测到不可纠正的 ECC 错误",
+        "recommended_action": "运行华为服务器内存诊断工具，定位并更换故障 DIMM",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Huawei",
+        "event_code": "HW4004",
+        "sensor_type": "Drive",
+        "severity": "critical",
+        "description": "RAID 阵列中磁盘失效，逻辑盘降级运行",
+        "recommended_action": "更换故障磁盘，触发阵列重建；确认热备盘配置正确",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Huawei",
+        "event_code": "HW4005",
+        "sensor_type": "NIC",
+        "severity": "warning",
+        "description": "网口协商速率低于预期，链路带宽不足",
+        "recommended_action": "检查对端交换机端口速率配置，确认网线规格匹配；更新 NIC 固件",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Huawei",
+        "event_code": "HW4006",
+        "sensor_type": "PCIe",
+        "severity": "warning",
+        "description": "PCIe 插槽热插拔事件异常，设备可能未正确识别",
+        "recommended_action": "确认设备支持热插拔，重新扫描 PCIe 总线；必要时重启系统",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Huawei",
+        "event_code": "HW4007",
+        "sensor_type": "System Board",
+        "severity": "critical",
+        "description": "iBMC 管理芯片异常，带外管理功能不可用",
+        "recommended_action": "通过 IPMI 重置 iBMC，检查固件版本；如持续异常升级 iBMC 固件",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Huawei",
+        "event_code": "HW4008",
+        "sensor_type": "Processor",
+        "severity": "warning",
+        "description": "CPU 已触发功耗保护机制，运行频率降低",
+        "recommended_action": "检查 CPU 散热条件，确认功耗策略配置；优化工作负载分布",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Huawei",
+        "event_code": "HW4009",
+        "sensor_type": "Voltage",
+        "severity": "critical",
+        "description": "主板 3.3V 待机电压异常，系统可能无法正常开机",
+        "recommended_action": "检查 PSU 待机输出，确认主板供电线路正常；必要时更换主板",
+    },
+]
+
+
+# ---------------------------------------------------------------------------
+# 固件兼容性种子数据
+# ---------------------------------------------------------------------------
+
+FIRMWARE_SEED_DATA: List[Dict[str, Any]] = [
+    # ======================== Dell ========================
+    {
+        "id": uuid.uuid4(),
+        "brand": "Dell",
+        "model": "PowerEdge R750",
+        "component": "iDRAC",
+        "version": "7.10.50.00",
+        "release_date": datetime(2025, 6, 15, tzinfo=timezone.utc),
+        "criticality": "critical",
+        "release_notes": "修复安全漏洞 CVE-2025-1234，提升远程管理稳定性",
+        "download_url": "https://www.dell.com/support/home/idrac-7.10.50",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Dell",
+        "model": "PowerEdge R750",
+        "component": "BIOS",
+        "version": "2.18.1",
+        "release_date": datetime(2025, 5, 20, tzinfo=timezone.utc),
+        "criticality": "recommended",
+        "release_notes": "新增对第4代 Intel Xeon 可扩展处理器支持，优化内存训练",
+        "download_url": "https://www.dell.com/support/home/bios-2.18.1-r750",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Dell",
+        "model": "PowerEdge R750xs",
+        "component": "PERC H755",
+        "version": "5.3.2.0010",
+        "release_date": datetime(2025, 4, 10, tzinfo=timezone.utc),
+        "criticality": "optional",
+        "release_notes": "优化 RAID 重建性能，修复 NVMe SSD 兼容性问题",
+        "download_url": "https://www.dell.com/support/home/perc-h755-5.3.2",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Dell",
+        "model": "PowerEdge R660",
+        "component": "NIC",
+        "version": "2.85.100.17",
+        "release_date": datetime(2025, 3, 28, tzinfo=timezone.utc),
+        "criticality": "recommended",
+        "release_notes": "修复 Broadcom 5720 网卡在高负载下丢包问题",
+        "download_url": "https://www.dell.com/support/home/nic-2.85.100.17",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Dell",
+        "model": "PowerEdge R660",
+        "component": "iDRAC",
+        "version": "7.10.50.00",
+        "release_date": datetime(2025, 6, 15, tzinfo=timezone.utc),
+        "criticality": "critical",
+        "release_notes": "修复安全漏洞 CVE-2025-1234，提升远程管理稳定性",
+        "download_url": "https://www.dell.com/support/home/idrac-7.10.50",
+    },
+    # ======================== HPE ========================
+    {
+        "id": uuid.uuid4(),
+        "brand": "HPE",
+        "model": "ProLiant DL380 Gen11",
+        "component": "iLO",
+        "version": "2.85",
+        "release_date": datetime(2025, 7, 1, tzinfo=timezone.utc),
+        "criticality": "critical",
+        "release_notes": "修复 iLO 远程控制台断连问题，增强安全认证机制",
+        "download_url": "https://support.hpe.com/ilo-2.85-dl380g11",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "HPE",
+        "model": "ProLiant DL380 Gen11",
+        "component": "BIOS",
+        "version": "1.60",
+        "release_date": datetime(2025, 5, 10, tzinfo=timezone.utc),
+        "criticality": "recommended",
+        "release_notes": "支持 Intel SGX 新特性，修复 USB 设备枚举问题",
+        "download_url": "https://support.hpe.com/bios-1.60-dl380g11",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "HPE",
+        "model": "ProLiant DL360 Gen11",
+        "component": "Smart Array P408i",
+        "version": "4.10",
+        "release_date": datetime(2025, 4, 22, tzinfo=timezone.utc),
+        "criticality": "optional",
+        "release_notes": "优化 SSD 混合阵列性能，修复缓存电池状态误报",
+        "download_url": "https://support.hpe.com/sa-p408i-4.10",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "HPE",
+        "model": "ProLiant DL380 Gen11",
+        "component": "NIC",
+        "version": "1.14.22",
+        "release_date": datetime(2025, 3, 15, tzinfo=timezone.utc),
+        "criticality": "recommended",
+        "release_notes": "修复 QL41232 网卡 SR-IOV 配置问题，提升网络吞吐",
+        "download_url": "https://support.hpe.com/nic-1.14.22-dl380g11",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "HPE",
+        "model": "ProLiant DL360 Gen11",
+        "component": "iLO",
+        "version": "2.85",
+        "release_date": datetime(2025, 7, 1, tzinfo=timezone.utc),
+        "criticality": "critical",
+        "release_notes": "修复 iLO 远程控制台断连问题，增强安全认证机制",
+        "download_url": "https://support.hpe.com/ilo-2.85-dl360g11",
+    },
+    # ======================== Lenovo ========================
+    {
+        "id": uuid.uuid4(),
+        "brand": "Lenovo",
+        "model": "ThinkSystem SR650 V3",
+        "component": "XCC",
+        "version": "4.10.2a",
+        "release_date": datetime(2025, 6, 20, tzinfo=timezone.utc),
+        "criticality": "critical",
+        "release_notes": "修复 XCC 远程管理安全漏洞，提升 LDAP 认证稳定性",
+        "download_url": "https://support.lenovo.com/xcc-4.10.2a-sr650v3",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Lenovo",
+        "model": "ThinkSystem SR650 V3",
+        "component": "UEFI",
+        "version": "UEFI-3.20",
+        "release_date": datetime(2025, 5, 5, tzinfo=timezone.utc),
+        "criticality": "recommended",
+        "release_notes": "新增 Intel TDX 支持，优化启动速度，修复 PXE 引导问题",
+        "download_url": "https://support.lenovo.com/uefi-3.20-sr650v3",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Lenovo",
+        "model": "ThinkSystem SR650 V3",
+        "component": "RAID 930-8i",
+        "version": "5.4.01",
+        "release_date": datetime(2025, 4, 18, tzinfo=timezone.utc),
+        "criticality": "optional",
+        "release_notes": "优化 JBOD 模式性能，修复 SSD 固件升级后识别异常",
+        "download_url": "https://support.lenovo.com/raid-930-5.4.01",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Lenovo",
+        "model": "ThinkSystem SR630 V3",
+        "component": "NIC",
+        "version": "2.30.10",
+        "release_date": datetime(2025, 3, 10, tzinfo=timezone.utc),
+        "criticality": "recommended",
+        "release_notes": "修复 OCP 网卡在虚拟化场景下中断丢失问题",
+        "download_url": "https://support.lenovo.com/nic-2.30.10-sr630v3",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Lenovo",
+        "model": "ThinkSystem SR630 V3",
+        "component": "XCC",
+        "version": "4.10.2a",
+        "release_date": datetime(2025, 6, 20, tzinfo=timezone.utc),
+        "criticality": "critical",
+        "release_notes": "修复 XCC 远程管理安全漏洞，提升 LDAP 认证稳定性",
+        "download_url": "https://support.lenovo.com/xcc-4.10.2a-sr630v3",
+    },
+    # ======================== Huawei ========================
+    {
+        "id": uuid.uuid4(),
+        "brand": "Huawei",
+        "model": "FusionServer Pro 2288H V7",
+        "component": "iBMC",
+        "version": "6.32.3.10",
+        "release_date": datetime(2025, 7, 5, tzinfo=timezone.utc),
+        "criticality": "critical",
+        "release_notes": "修复 iBMC Web 界面 XSS 漏洞，增强 Redfish API 安全性",
+        "download_url": "https://support.huawei.com/ibmc-6.32.3.10-2288hv7",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Huawei",
+        "model": "FusionServer Pro 2288H V7",
+        "component": "BIOS",
+        "version": "1.97",
+        "release_date": datetime(2025, 5, 25, tzinfo=timezone.utc),
+        "criticality": "recommended",
+        "release_notes": "新增华为自研鲲鹏加速卡支持，优化内存 RAS 特性",
+        "download_url": "https://support.huawei.com/bios-1.97-2288hv7",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Huawei",
+        "model": "FusionServer Pro 2288H V7",
+        "component": "RAID",
+        "version": "3.21.00",
+        "release_date": datetime(2025, 4, 30, tzinfo=timezone.utc),
+        "criticality": "optional",
+        "release_notes": "优化 RAID 5/6 重建速度，修复 NVMe 热插拔偶发失败",
+        "download_url": "https://support.huawei.com/raid-3.21.00-2288hv7",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Huawei",
+        "model": "FusionServer Pro 2288H V7",
+        "component": "NIC",
+        "version": "2.8.5.20",
+        "release_date": datetime(2025, 3, 20, tzinfo=timezone.utc),
+        "criticality": "recommended",
+        "release_notes": "修复 25GE 网卡在 RoCEv2 场景下 PFC 暂停帧异常",
+        "download_url": "https://support.huawei.com/nic-2.8.5.20-2288hv7",
+    },
+    {
+        "id": uuid.uuid4(),
+        "brand": "Huawei",
+        "model": "FusionServer Pro 2488H V7",
+        "component": "iBMC",
+        "version": "6.32.3.10",
+        "release_date": datetime(2025, 7, 5, tzinfo=timezone.utc),
+        "criticality": "critical",
+        "release_notes": "修复 iBMC Web 界面 XSS 漏洞，增强 Redfish API 安全性",
+        "download_url": "https://support.huawei.com/ibmc-6.32.3.10-2488hv7",
+    },
+]
+
+
+def get_sel_seed_records() -> List[SELEventCode]:
+    """将 SEL 种子数据转换为 ORM 对象列表。"""
+    return [SELEventCode(**row) for row in SEL_SEED_DATA]
+
+
+def get_firmware_seed_records() -> List[FirmwareCompatibility]:
+    """将固件兼容性种子数据转换为 ORM 对象列表。"""
+    return [FirmwareCompatibility(**row) for row in FIRMWARE_SEED_DATA]
+
+
+async def seed_knowledge_data(session) -> None:
+    """
+    将种子数据写入数据库（幂等操作：仅当表为空时插入）。
+    用法：在应用启动或 CLI 命令中调用此函数。
+    """
+    from sqlalchemy import func, select
+
+    from app.modules.knowledge.models import FirmwareCompatibility, SELEventCode
+
+    # 检查 SEL 事件码表是否为空
+    sel_count = (await session.execute(select(func.count(SELEventCode.id)))).scalar_one()
+    if sel_count == 0:
+        for record in get_sel_seed_records():
+            session.add(record)
+        await session.commit()
+
+    # 检查固件兼容性表是否为空
+    fw_count = (await session.execute(select(func.count(FirmwareCompatibility.id)))).scalar_one()
+    if fw_count == 0:
+        for record in get_firmware_seed_records():
+            session.add(record)
+        await session.commit()

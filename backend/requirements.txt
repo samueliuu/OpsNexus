@@ -1,0 +1,50 @@
+# Web Framework
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+python-multipart==0.0.17
+
+# Database
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.0
+
+# Cache & Message Queue
+redis==5.2.0
+aio-pika==9.5.0
+
+# Object Storage
+minio==7.2.12
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+cryptography==43.0.0
+
+# HTTP Client
+httpx==0.27.2
+
+# BMC Management (DMTF Official)
+redfish>=3.3.0
+
+# Email
+aiosmtplib==3.0.1
+
+# Configuration & Validation
+pydantic==2.9.2
+pydantic-settings==2.6.1
+
+# Logging
+structlog==24.4.0
+
+# Monitoring
+prometheus-client==0.21.0
+
+# Utilities
+python-dotenv==1.0.1
+email-validator==2.2.0
+
+# Testing
+pytest==8.3.3
+pytest-asyncio==0.24.0
+pytest-cov==6.0.0
+respx==0.21.1

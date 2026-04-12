@@ -1,0 +1,145 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: timescale/timescaledb:latest-pg16
+    container_name: opsnexus-postgres
+    environment:
+      POSTGRES_DB: opsnexus
+      POSTGRES_USER: opsnexus
+      POSTGRES_PASSWORD: opsnexus_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U opsnexus"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - opsnexus-network
+
+  redis:
+    image: redis:7.2-alpine
+    container_name: opsnexus-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - opsnexus-network
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    container_name: opsnexus-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: opsnexus
+      RABBITMQ_DEFAULT_PASS: opsnexus_dev
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - opsnexus-network
+
+  minio:
+    image: minio/minio:RELEASE.2024-11-07T00-52-20Z
+    container_name: opsnexus-minio
+    environment:
+      MINIO_ROOT_USER: opsnexus
+      MINIO_ROOT_PASSWORD: opsnexus_dev
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - opsnexus-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: opsnexus-backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://opsnexus:opsnexus_dev@postgres:5432/opsnexus
+      REDIS_URL: redis://redis:6379/0
+      RABBITMQ_URL: amqp://opsnexus:opsnexus_dev@rabbitmq:5672/
+      MINIO_URL: http://minio:9000
+      MINIO_ACCESS_KEY: opsnexus
+      MINIO_SECRET_KEY: opsnexus_dev
+      JWT_SECRET_KEY: dev-secret-key-change-in-production
+      ENVIRONMENT: development
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - opsnexus-network
+    stop_grace_period: 60s
+    stop_signal: SIGTERM
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: dev
+    container_name: opsnexus-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+    networks:
+      - opsnexus-network
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: opsnexus-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/dev.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - opsnexus-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  minio_data:
+
+networks:
+  opsnexus-network:
+    driver: bridge
