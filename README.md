@@ -97,7 +97,6 @@ OpsNexus/
 │   │   └── router/            # 路由配置
 │   └── package.json
 ├── nginx/                     # Nginx 反向代理配置
-├── docs/                      # 架构设计文档
 └── docker-compose.yml
 ```
 
