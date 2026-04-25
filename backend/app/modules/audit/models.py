@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -10,9 +12,9 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.dialects.postgresql import INET, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.compat import GUID, INET
 from app.core.database import Base
 
 
@@ -20,10 +22,10 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+        GUID(), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     username: Mapped[Optional[str]] = mapped_column(String(64))
     action: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
@@ -48,10 +50,10 @@ class NotificationLog(Base):
     __tablename__ = "notification_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     channel_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("notification_channels.id", ondelete="CASCADE"), nullable=False, index=True
+        GUID(), ForeignKey("notification_channels.id", ondelete="CASCADE"), nullable=False, index=True
     )
     channel_type: Mapped[str] = mapped_column(String(32), nullable=False)
     recipient: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -64,7 +66,7 @@ class NotificationLog(Base):
     sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     retry_count: Mapped[int] = mapped_column(Integer, default=0)
     related_alert_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("alert_events.id", ondelete="SET NULL"), nullable=True, index=True
+        GUID(), ForeignKey("alert_events.id", ondelete="SET NULL"), nullable=True, index=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
@@ -74,4 +76,10 @@ class NotificationLog(Base):
 
     @property
     def channel_name(self) -> Optional[str]:
-        return self.channel.name if self.channel else None
+        try:
+            ch = self.__dict__.get('channel')
+            if ch is not None and not isinstance(ch, str):
+                return ch.name
+        except Exception:
+            pass
+        return None

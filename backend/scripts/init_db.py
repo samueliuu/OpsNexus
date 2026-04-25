@@ -9,6 +9,13 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.core.database import AsyncSessionLocal, init_db
 from app.core.security import get_password_hash
+import app.modules.asset.models
+import app.modules.audit.models
+import app.modules.autoops.models
+import app.modules.knowledge.models
+import app.modules.monitor.models
+import app.modules.outband.models
+import app.modules.system.models
 from app.modules.monitor.models import MetricDefinition
 from app.modules.system.models import Permission, Role, User
 
@@ -138,9 +145,12 @@ async def seed_permissions(session: AsyncSessionLocal):
 
 async def seed_roles(session: AsyncSessionLocal):
     """Seed roles with permissions."""
-    # Get all permissions
+    from sqlalchemy import insert as sa_insert, delete as sa_delete, text
+
     result = await session.execute(select(Permission))
     permissions = {p.code: p for p in result.scalars().all()}
+
+    from app.modules.system.models import role_permissions
 
     for role_data in SEED_ROLES:
         result = await session.execute(
@@ -159,24 +169,33 @@ async def seed_roles(session: AsyncSessionLocal):
             await session.flush()
             print(f"Created role: {role_data['code']}")
 
-        # Assign permissions
         role_code = role_data["code"]
         if role_code in ROLE_PERMISSIONS:
+            await session.execute(
+                sa_delete(role_permissions).where(role_permissions.c.role_id == role.id)
+            )
+            await session.flush()
+
             for perm_code in ROLE_PERMISSIONS[role_code]:
                 if perm_code in permissions:
-                    if permissions[perm_code] not in role.permissions:
-                        role.permissions.append(permissions[perm_code])
+                    await session.execute(
+                        sa_insert(role_permissions).values(
+                            role_id=role.id,
+                            permission_id=permissions[perm_code].id,
+                        )
+                    )
 
     await session.commit()
 
 
 async def seed_admin_user(session: AsyncSessionLocal):
     """Seed admin user."""
+    from sqlalchemy import insert as sa_insert
+
     result = await session.execute(
         select(User).where(User.username == "admin")
     )
     if result.scalar_one_or_none() is None:
-        # Get super_admin role
         result = await session.execute(
             select(Role).where(Role.code == "super_admin")
         )
@@ -185,14 +204,22 @@ async def seed_admin_user(session: AsyncSessionLocal):
         admin_user = User(
             id=uuid.uuid4(),
             username="admin",
-            email="admin@opsnexus.local",
+            email="admin@opsnexus.dev",
             password_hash=get_password_hash("admin123"),
             full_name="Administrator",
             is_active=True,
             is_superuser=True,
         )
-        admin_user.roles.append(super_admin_role)
         session.add(admin_user)
+        await session.flush()
+
+        from app.modules.system.models import user_roles
+        await session.execute(
+            sa_insert(user_roles).values(
+                user_id=admin_user.id,
+                role_id=super_admin_role.id,
+            )
+        )
         await session.commit()
         print("Created admin user: admin / admin123")
         print("WARNING: Please change the default password after first login!")

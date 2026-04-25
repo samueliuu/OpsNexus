@@ -1,79 +1,98 @@
 <template>
   <div class="firmware-matrix">
-    <el-card>
+    <Card>
       <template #header>
         <div class="card-header"><span>固件兼容矩阵</span></div>
       </template>
-      <el-form :inline="true" :model="query" @submit.prevent="handleQuery">
-        <el-form-item label="品牌">
-          <el-select v-model="query.brand" placeholder="选择品牌" style="width: 140px">
-            <el-option v-for="b in brands" :key="b" :label="b" :value="b" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="型号">
-          <el-input v-model="query.model" placeholder="如 PowerEdge R750" clearable style="width: 180px" />
-        </el-form-item>
-        <el-form-item label="组件">
-          <el-select v-model="query.component" placeholder="全部" clearable style="width: 120px">
-            <el-option label="BIOS" value="BIOS" />
-            <el-option label="BMC" value="BMC" />
-            <el-option label="RAID" value="RAID" />
-            <el-option label="NIC" value="NIC" />
-            <el-option label="PSU" value="PSU" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleQuery" :loading="loading">查询</el-button>
-        </el-form-item>
-      </el-form>
-      <el-table :data="results" stripe v-loading="loading" :empty-text="emptyText">
-        <el-table-column prop="model" label="服务器型号" width="160" fixed />
-        <el-table-column prop="component" label="组件" width="90" align="center" />
-        <el-table-column prop="version" label="固件版本" width="130" />
-        <el-table-column prop="criticality" label="重要性" width="120" align="center">
-          <template #default="{ row }">
-            <el-tag
-              :type="criticalityTagType(row.criticality)"
-              :color="criticalityColor(row.criticality)"
-              :style="{ color: criticalityTextColor(row.criticality), borderColor: criticalityColor(row.criticality) }"
-              size="small"
-              effect="dark"
-            >
-              {{ criticalityLabel(row.criticality) }}
-            </el-tag>
+      <template #content>
+        <div class="form-inline" @submit.prevent="handleQuery">
+          <div class="field">
+            <label>品牌</label>
+            <Select v-model="query.brand" :options="brandOptions" optionLabel="label" optionValue="value" placeholder="选择品牌" style="width: 140px" showClear />
+          </div>
+          <div class="field">
+            <label>型号</label>
+            <InputText v-model="query.model" placeholder="如 PowerEdge R750" style="width: 180px" />
+          </div>
+          <div class="field">
+            <label>组件</label>
+            <Select v-model="query.component" :options="componentOptions" optionLabel="label" optionValue="value" placeholder="全部" style="width: 120px" showClear />
+          </div>
+          <div class="field">
+            <Button label="查询" :loading="loading" @click="handleQuery" />
+          </div>
+        </div>
+        <DataTable :value="results" :loading="loading" stripedRows>
+          <template #empty>
+            <div class="empty-state">{{ emptyText }}</div>
           </template>
-        </el-table-column>
-        <el-table-column prop="release_date" label="发布日期" width="120">
-          <template #default="{ row }">
-            <span v-if="row.release_date">{{ formatDate(row.release_date) }}</span>
-            <span v-else class="text-muted">--</span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="release_notes" label="发布说明" min-width="220" show-overflow-tooltip>
-          <template #default="{ row }">
-            <span v-if="row.release_notes">{{ row.release_notes }}</span>
-            <span v-else class="text-muted">暂无说明</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="下载" width="80" align="center">
-          <template #default="{ row }">
-            <el-link v-if="row.download_url" :href="row.download_url" target="_blank" type="primary" :underline="false">下载</el-link>
-            <span v-else class="text-muted">--</span>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
+          <Column field="model" header="服务器型号" style="width: 160px" />
+          <Column field="component" header="组件" style="width: 90px; text-align: center" />
+          <Column field="version" header="固件版本" style="width: 130px" />
+          <Column field="criticality" header="重要性" style="width: 120px; text-align: center">
+            <template #body="{ data }">
+              <Tag :severity="criticalitySeverity(data.criticality)" style="font-size: 12px">
+                {{ criticalityLabel(data.criticality) }}
+              </Tag>
+            </template>
+          </Column>
+          <Column field="release_date" header="发布日期" style="width: 120px">
+            <template #body="{ data }">
+              <span v-if="data.release_date">{{ formatDate(data.release_date) }}</span>
+              <span v-else class="text-muted">--</span>
+            </template>
+          </Column>
+          <Column field="release_notes" header="发布说明" style="min-width: 220px">
+            <template #body="{ data }">
+              <span v-if="data.release_notes">{{ data.release_notes }}</span>
+              <span v-else class="text-muted">暂无说明</span>
+            </template>
+          </Column>
+          <Column header="下载" style="width: 80px; text-align: center">
+            <template #body="{ data }">
+              <Button v-if="data.download_url" link label="下载" @click="openUrl(data.download_url)" />
+              <span v-else class="text-muted">--</span>
+            </template>
+          </Column>
+        </DataTable>
+      </template>
+    </Card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
+import Card from 'primevue/card'
+import Select from 'primevue/select'
+import InputText from 'primevue/inputtext'
+import Button from 'primevue/button'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Tag from 'primevue/tag'
 import { knowledgeApi } from '@/api/knowledge'
 
 const loading = ref(false)
 const hasQueried = ref(false)
 const results = ref<any[]>([])
-const brands = ['Dell', 'HPE', 'Lenovo', 'Huawei', 'Inspur', 'H3C', 'Sugon', 'xFusion']
+
+const brandOptions = [
+  { label: 'Dell', value: 'Dell' },
+  { label: 'HPE', value: 'HPE' },
+  { label: 'Lenovo', value: 'Lenovo' },
+  { label: 'Huawei', value: 'Huawei' },
+  { label: 'Inspur', value: 'Inspur' },
+  { label: 'H3C', value: 'H3C' },
+  { label: 'Sugon', value: 'Sugon' },
+  { label: 'xFusion', value: 'xFusion' },
+]
+
+const componentOptions = [
+  { label: 'BIOS', value: 'BIOS' },
+  { label: 'BMC', value: 'BMC' },
+  { label: 'RAID', value: 'RAID' },
+  { label: 'NIC', value: 'NIC' },
+  { label: 'PSU', value: 'PSU' },
+]
 
 const query = reactive({ brand: '', model: '', component: '' })
 
@@ -82,20 +101,10 @@ const emptyText = computed(() => {
   return '未找到匹配的固件信息，请调整查询条件后重试'
 })
 
-const criticalityTagType = (c: string) => {
+const criticalitySeverity = (c: string) => {
   if (c === 'critical') return 'danger'
   if (c === 'recommended') return 'warning'
-  return 'info'
-}
-
-const criticalityColor = (c: string) => {
-  if (c === 'critical') return '#f56c6c'
-  if (c === 'recommended') return '#e6a23c'
-  return '#909399'
-}
-
-const criticalityTextColor = (c: string) => {
-  return '#ffffff'
+  return 'secondary'
 }
 
 const criticalityLabel = (c: string) => {
@@ -108,6 +117,10 @@ const criticalityLabel = (c: string) => {
 const formatDate = (d: string) => {
   if (!d) return ''
   return new Date(d).toLocaleDateString('zh-CN', { year: 'numeric', month: '2-digit', day: '2-digit' })
+}
+
+const openUrl = (url: string) => {
+  window.open(url, '_blank')
 }
 
 const handleQuery = async () => {
@@ -132,4 +145,8 @@ const handleQuery = async () => {
 <style scoped>
 .card-header { display: flex; justify-content: space-between; align-items: center; }
 .text-muted { color: #c0c4cc; font-style: italic; }
+.form-inline { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 16px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 13px; color: #606266; }
+.empty-state { text-align: center; padding: 40px 0; color: #909399; }
 </style>

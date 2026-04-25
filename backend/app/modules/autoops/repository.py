@@ -10,7 +10,6 @@ from app.core.exceptions import NotFoundException
 from app.core.logging import get_logger
 from app.modules.autoops.models import (
     FirmwarePackage,
-    InspectionPolicy,
     TaskDefinition,
     TaskInstance,
     TaskStepLog,

@@ -1,51 +1,61 @@
 <template>
   <div>
-    <el-card shadow="never">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <h3 style="margin:0">告警事件</h3>
-        <div>
-          <el-select v-model="filterStatus" placeholder="状态" clearable style="width:120px;margin-right:10px" @change="page = 1; loadData()">
-            <el-option label="触发中" value="firing" /><el-option label="已确认" value="acknowledged" /><el-option label="已解决" value="resolved" /><el-option label="已抑制" value="suppressed" />
-          </el-select>
-          <el-select v-model="filterSeverity" placeholder="级别" clearable style="width:120px;margin-right:10px" @change="page = 1; loadData()">
-            <el-option label="严重" value="critical" /><el-option label="警告" value="warning" /><el-option label="信息" value="info" />
-          </el-select>
-          <el-button type="primary" size="small" @click="acknowledgeSelected" :disabled="!selectedIds.length">确认选中</el-button>
+    <Card>
+      <template #content>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3 style="margin:0">告警事件</h3>
+          <div style="display:flex;align-items:center;gap:10px">
+            <Select v-model="filterStatus" :options="statusFilterOptions" optionLabel="label" optionValue="value" placeholder="状态" showClear style="width:120px" @change="onFilterChange" />
+            <Select v-model="filterSeverity" :options="severityFilterOptions" optionLabel="label" optionValue="value" placeholder="级别" showClear style="width:120px" @change="onFilterChange" />
+            <Button label="确认选中" size="small" @click="acknowledgeSelected" :disabled="!selectedIds.length" />
+          </div>
         </div>
-      </div>
-      <el-table :data="tableData" stripe v-loading="loading" @selection-change="(rows: any[]) => selectedIds = rows.map((r: any) => r.id)">
-        <el-table-column type="selection" width="50" />
-        <el-table-column label="级别" width="80">
-          <template #default="{ row }"><el-tag :type="sevType(row.severity)" size="small">{{ row.severity }}</el-tag></template>
-        </el-table-column>
-        <el-table-column prop="summary" label="摘要" min-width="200" />
-        <el-table-column label="状态" width="90">
-          <template #default="{ row }"><el-tag :type="statusType(row.status)" size="small">{{ statusLabel(row.status) }}</el-tag></template>
-        </el-table-column>
-        <el-table-column label="指标值" width="100">
-          <template #default="{ row }">{{ row.metric_value != null ? Number(row.metric_value).toFixed(2) : '-' }}</template>
-        </el-table-column>
-        <el-table-column label="触发时间" width="160">
-          <template #default="{ row }">{{ formatTime(row.triggered_at) }}</template>
-        </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
-          <template #default="{ row }">
-            <el-button v-if="row.status === 'firing'" text type="primary" size="small" @click="acknowledgeOne(row.id)">确认</el-button>
-            <el-button v-if="row.status === 'firing' || row.status === 'acknowledged'" text type="warning" size="small" @click="suppressOne(row.id)">抑制</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-      <el-pagination v-model:current-page="page" v-model:page-size="pageSize" :total="total" layout="total, sizes, prev, pager, next" :page-sizes="[20, 50, 100]" @change="loadData" style="margin-top:16px;justify-content:flex-end" />
-    </el-card>
+        <DataTable v-model:selection="selectedRows" :value="tableData" stripedRows :loading="loading">
+          <Column selectionMode="multiple" style="width:50px" />
+          <Column header="级别" style="width:80px">
+            <template #body="{ data }">
+              <Tag :severity="sevSeverity(data.severity)">{{ data.severity }}</Tag>
+            </template>
+          </Column>
+          <Column field="summary" header="摘要" style="min-width:200px" />
+          <Column header="状态" style="width:90px">
+            <template #body="{ data }">
+              <Tag :severity="statusSeverity(data.status)">{{ statusLabel(data.status) }}</Tag>
+            </template>
+          </Column>
+          <Column header="指标值" style="width:100px">
+            <template #body="{ data }">{{ data.metric_value != null ? Number(data.metric_value).toFixed(2) : '-' }}</template>
+          </Column>
+          <Column header="触发时间" style="width:160px">
+            <template #body="{ data }">{{ formatTime(data.triggered_at) }}</template>
+          </Column>
+          <Column header="操作" style="width:120px" frozen alignFrozen="right">
+            <template #body="{ data }">
+              <Button v-if="data.status === 'firing'" label="确认" link size="small" @click="acknowledgeOne(data.id)" />
+              <Button v-if="data.status === 'firing' || data.status === 'acknowledged'" label="抑制" link severity="warning" size="small" @click="suppressOne(data.id)" />
+            </template>
+          </Column>
+        </DataTable>
+        <Paginator :rows="pageSize" :totalRecords="total" :first="(page - 1) * pageSize" @page="onPage" :rowsPerPageOptions="[20, 50, 100]" template="RowsPerPageDropdown CurrentPageReport PrevPageLink PageLinks NextPageLink" currentPageReportTemplate="共 {totalRecords} 条" style="margin-top:16px" />
+      </template>
+    </Card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import Card from 'primevue/card'
+import Button from 'primevue/button'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Tag from 'primevue/tag'
+import Select from 'primevue/select'
+import Paginator from 'primevue/paginator'
+import { useToast } from 'primevue/usetoast'
 import { monitorApi } from '@/api/monitor'
-import { ElMessage } from 'element-plus'
 import dayjs from 'dayjs'
 
+const toast = useToast()
 const loading = ref(false)
 const tableData = ref<any[]>([])
 const total = ref(0)
@@ -53,7 +63,20 @@ const page = ref(1)
 const pageSize = ref(20)
 const filterStatus = ref('')
 const filterSeverity = ref('')
-const selectedIds = ref<string[]>([])
+const selectedRows = ref<any[]>([])
+const selectedIds = computed(() => selectedRows.value.map(r => r.id))
+
+const statusFilterOptions = [
+  { label: '触发中', value: 'firing' },
+  { label: '已确认', value: 'acknowledged' },
+  { label: '已解决', value: 'resolved' },
+  { label: '已抑制', value: 'suppressed' },
+]
+const severityFilterOptions = [
+  { label: '严重', value: 'critical' },
+  { label: '警告', value: 'warning' },
+  { label: '信息', value: 'info' },
+]
 
 onMounted(() => loadData())
 
@@ -66,23 +89,67 @@ async function loadData() {
     const { data } = await monitorApi.alertEvents.list(params)
     tableData.value = data.items || []
     total.value = data.total || 0
-  } catch { ElMessage.error('加载失败') } finally { loading.value = false }
+  } catch {
+    toast.add({ severity: 'error', summary: '错误', detail: '加载失败', life: 3000 })
+  } finally {
+    loading.value = false
+  }
 }
 
-function sevType(s: string) { return { critical: 'danger', warning: 'warning', info: 'info' }[s] || 'info' }
-function statusType(s: string) { return { firing: 'danger', acknowledged: 'warning', resolved: 'success', suppressed: 'info' }[s] || 'info' }
-function statusLabel(s: string) { return { firing: '触发中', acknowledged: '已确认', resolved: '已解决', suppressed: '已抑制' }[s] || s }
-function formatTime(t?: string) { return t ? dayjs(t).format('YYYY-MM-DD HH:mm:ss') : '-' }
+function onFilterChange() {
+  page.value = 1
+  loadData()
+}
+
+function onPage(event: any) {
+  page.value = event.page + 1
+  pageSize.value = event.rows
+  loadData()
+}
+
+function sevSeverity(s: string) {
+  return { critical: 'danger', warning: 'warning', info: 'secondary' }[s] || 'secondary'
+}
+
+function statusSeverity(s: string) {
+  return { firing: 'danger', acknowledged: 'warning', resolved: 'success', suppressed: 'secondary' }[s] || 'secondary'
+}
+
+function statusLabel(s: string) {
+  return { firing: '触发中', acknowledged: '已确认', resolved: '已解决', suppressed: '已抑制' }[s] || s
+}
+
+function formatTime(t?: string) {
+  return t ? dayjs(t).format('YYYY-MM-DD HH:mm:ss') : '-'
+}
 
 async function acknowledgeOne(id: string) {
-  try { await monitorApi.alertEvents.acknowledge([id]); ElMessage.success('已确认'); loadData() } catch { ElMessage.error('确认失败') }
+  try {
+    await monitorApi.alertEvents.acknowledge([id])
+    toast.add({ severity: 'success', summary: '成功', detail: '已确认', life: 3000 })
+    loadData()
+  } catch {
+    toast.add({ severity: 'error', summary: '错误', detail: '确认失败', life: 3000 })
+  }
 }
 
 async function acknowledgeSelected() {
-  try { await monitorApi.alertEvents.acknowledge(selectedIds.value); ElMessage.success(`已确认 ${selectedIds.value.length} 条`); loadData() } catch { ElMessage.error('确认失败') }
+  try {
+    await monitorApi.alertEvents.acknowledge(selectedIds.value)
+    toast.add({ severity: 'success', summary: '成功', detail: `已确认 ${selectedIds.value.length} 条`, life: 3000 })
+    loadData()
+  } catch {
+    toast.add({ severity: 'error', summary: '错误', detail: '确认失败', life: 3000 })
+  }
 }
 
 async function suppressOne(id: string) {
-  try { await monitorApi.alertEvents.suppress([id]); ElMessage.success('已抑制'); loadData() } catch { ElMessage.error('抑制失败') }
+  try {
+    await monitorApi.alertEvents.suppress([id])
+    toast.add({ severity: 'success', summary: '成功', detail: '已抑制', life: 3000 })
+    loadData()
+  } catch {
+    toast.add({ severity: 'error', summary: '错误', detail: '抑制失败', life: 3000 })
+  }
 }
 </script>

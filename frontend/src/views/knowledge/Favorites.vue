@@ -1,61 +1,66 @@
 <template>
   <div class="knowledge-favorites">
-    <el-card>
+    <Card>
       <template #header>
         <div class="card-header">
           <span>我的收藏</span>
-          <el-tag v-if="favorites.length" type="info" size="small">{{ favorites.length }} 条</el-tag>
+          <Tag v-if="favorites.length" severity="secondary" style="font-size: 12px">{{ favorites.length }} 条</Tag>
         </div>
       </template>
-      <div v-loading="loading">
-        <div v-if="favorites.length" class="fav-grid">
-          <div v-for="fav in favorites" :key="fav.id" class="fav-card">
-            <div class="fav-card-header">
-              <span class="fav-title">{{ fav.title }}</span>
-              <el-button size="small" text type="danger" @click="removeFav(fav.id)" title="取消收藏">
-                <el-icon><Delete /></el-icon>
-              </el-button>
-            </div>
-            <div class="fav-content">{{ fav.content }}</div>
-            <div class="fav-footer">
-              <div class="fav-tags">
-                <el-tag
-                  v-if="fav.brand"
-                  size="small"
-                  :color="brandColor(fav.brand)"
-                  :style="{ color: '#ffffff', borderColor: brandColor(fav.brand) }"
-                  effect="dark"
-                >
-                  {{ fav.brand }}
-                </el-tag>
-                <el-tag
-                  size="small"
-                  :type="sourceTypeTag(fav.source_type)"
-                  effect="plain"
-                >
-                  {{ sourceTypeLabel(fav.source_type) }}
-                </el-tag>
+      <template #content>
+        <div class="loading-container" style="position: relative; min-height: 200px;">
+          <div v-if="loading" class="loading-overlay">
+            <ProgressSpinner style="width: 40px; height: 40px" />
+          </div>
+          <div v-if="favorites.length" class="fav-grid">
+            <div v-for="fav in favorites" :key="fav.id" class="fav-card">
+              <div class="fav-card-header">
+                <span class="fav-title">{{ fav.title }}</span>
+                <Button size="small" link severity="danger" @click="removeFav(fav.id)" title="取消收藏">
+                  <i class="pi pi-trash"></i>
+                </Button>
               </div>
-              <span class="fav-time">{{ formatTime(fav.created_at) }}</span>
+              <div class="fav-content">{{ fav.content }}</div>
+              <div class="fav-footer">
+                <div class="fav-tags">
+                  <Tag
+                    v-if="fav.brand"
+                    :style="{ background: brandColor(fav.brand), color: '#ffffff', borderColor: brandColor(fav.brand), fontSize: '12px' }"
+                  >
+                    {{ fav.brand }}
+                  </Tag>
+                  <Tag
+                    :severity="sourceTypeSeverity(fav.source_type)"
+                    style="font-size: 12px"
+                  >
+                    {{ sourceTypeLabel(fav.source_type) }}
+                  </Tag>
+                </div>
+                <span class="fav-time">{{ formatTime(fav.created_at) }}</span>
+              </div>
             </div>
           </div>
-        </div>
-        <el-empty v-if="!favorites.length && !loading" description="暂无收藏" :image-size="120">
-          <template #description>
+          <div v-if="!favorites.length && !loading" class="empty-state">
+            <i class="pi pi-inbox" style="font-size: 48px; color: #c0c4cc"></i>
+            <p>暂无收藏</p>
             <p class="empty-hint">在知识问答中收藏有价值的内容</p>
-          </template>
-        </el-empty>
-      </div>
-    </el-card>
+          </div>
+        </div>
+      </template>
+    </Card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useToast } from 'primevue/usetoast'
+import Card from 'primevue/card'
+import Tag from 'primevue/tag'
+import Button from 'primevue/button'
+import ProgressSpinner from 'primevue/progressspinner'
 import { knowledgeApi } from '@/api/knowledge'
-import { ElMessage } from 'element-plus'
-import { Delete } from '@element-plus/icons-vue'
 
+const toast = useToast()
 const loading = ref(false)
 const favorites = ref<any[]>([])
 
@@ -74,11 +79,11 @@ const brandColor = (brand: string) => {
   return brandColorMap[brand] || '#909399'
 }
 
-const sourceTypeTag = (type: string) => {
-  if (type === 'qa') return 'primary'
+const sourceTypeSeverity = (type: string) => {
+  if (type === 'qa') return undefined
   if (type === 'sel') return 'danger'
   if (type === 'firmware') return 'warning'
-  return 'info'
+  return 'secondary'
 }
 
 const sourceTypeLabel = (type: string) => {
@@ -98,7 +103,7 @@ const loadFavorites = async () => {
   try {
     const { data } = await knowledgeApi.listFavorites({ limit: 50 })
     favorites.value = data.items || []
-  } catch {} finally {
+  } catch { /* ignore */ } finally {
     loading.value = false
   }
 }
@@ -106,9 +111,9 @@ const loadFavorites = async () => {
 const removeFav = async (id: string) => {
   try {
     await knowledgeApi.deleteFavorite(id)
-    ElMessage.success('已取消收藏')
+    toast.add({ severity: 'success', summary: '成功', detail: '已取消收藏', life: 3000 })
     loadFavorites()
-  } catch {}
+  } catch { /* ignore */ }
 }
 
 onMounted(loadFavorites)
@@ -174,5 +179,26 @@ onMounted(loadFavorites)
 .fav-tags { display: flex; gap: 6px; align-items: center; }
 .fav-time { font-size: 12px; color: #909399; white-space: nowrap; }
 
+.empty-state {
+  text-align: center;
+  padding: 40px 0;
+  color: #909399;
+}
+.empty-state p {
+  margin: 8px 0 0;
+}
 .empty-hint { color: #909399; font-size: 13px; margin: 0; }
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.7);
+  z-index: 1;
+}
 </style>

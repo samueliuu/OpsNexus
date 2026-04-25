@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -12,9 +14,9 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.compat import GUID
 from app.core.database import Base
 
 
@@ -22,10 +24,10 @@ class SELLog(Base):
     __tablename__ = "sel_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     server_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("servers.id", ondelete="CASCADE"), nullable=False, index=True
+        GUID(), ForeignKey("servers.id", ondelete="CASCADE"), nullable=False, index=True
     )
     record_id: Mapped[int] = mapped_column(Integer, nullable=False)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
@@ -37,7 +39,7 @@ class SELLog(Base):
     raw_data: Mapped[Optional[dict]] = mapped_column(JSON)
     is_acknowledged: Mapped[bool] = mapped_column(Boolean, default=False)
     acknowledged_by: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+        GUID(), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     acknowledged_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -51,10 +53,10 @@ class FirmwareInventory(Base):
     __table_args__ = (UniqueConstraint("server_id", "component"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     server_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("servers.id", ondelete="CASCADE"), nullable=False, index=True
+        GUID(), ForeignKey("servers.id", ondelete="CASCADE"), nullable=False, index=True
     )
     component: Mapped[str] = mapped_column(String(64), nullable=False)  # BIOS, BMC, RAID, NIC, etc.
     component_id: Mapped[Optional[str]] = mapped_column(String(64))
@@ -77,13 +79,13 @@ class KVMSession(Base):
     __tablename__ = "kvm_sessions"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     server_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("servers.id", ondelete="CASCADE"), nullable=False, index=True
+        GUID(), ForeignKey("servers.id", ondelete="CASCADE"), nullable=False, index=True
     )
     user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+        GUID(), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     proxy_token: Mapped[str] = mapped_column(String(128), unique=True, nullable=False, index=True)
     status: Mapped[str] = mapped_column(

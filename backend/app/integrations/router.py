@@ -1,11 +1,11 @@
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.database import get_session
+from app.core.database import get_db as get_session
 from app.core.dependencies import get_current_user
 from app.core.logging import get_logger
 from app.integrations.netbox_client import NetBoxClient

@@ -4,7 +4,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query
 
 from app.core.dependencies import get_current_active_user, get_db
-from app.modules.system.models import User
 from app.modules.knowledge.schemas import (
     ConversationCreate,
     ConversationDetailResponse,
@@ -14,20 +13,17 @@ from app.modules.knowledge.schemas import (
     FavoriteCreate,
     FavoriteListResponse,
     FavoriteResponse,
-    FirmwareQuery,
     FirmwareResponse,
     KnowledgeAnswer,
     KnowledgeQuery,
-    SELCodeQuery,
     SELCodeResponse,
 )
 from app.modules.knowledge.service import (
     ConversationService,
     FavoriteService,
     KnowledgeService,
-    RAGQueryService,
-    StructuredQueryService,
 )
+from app.modules.system.models import User
 
 router = APIRouter(prefix="/knowledge", tags=["Knowledge"])
 

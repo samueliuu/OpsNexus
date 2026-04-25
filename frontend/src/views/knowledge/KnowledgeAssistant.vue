@@ -2,9 +2,7 @@
   <div class="knowledge-assistant">
     <div class="sidebar">
       <div class="sidebar-header">
-        <el-button type="primary" size="small" @click="createNewConversation" style="width: 100%">
-          <el-icon><Plus /></el-icon> 新建对话
-        </el-button>
+        <Button label="新建对话" icon="pi pi-plus" @click="createNewConversation" style="width: 100%" size="small" />
       </div>
       <div class="conversation-list">
         <div
@@ -15,14 +13,14 @@
         >
           <div class="conv-title">{{ conv.title }}</div>
           <div class="conv-time">{{ formatTime(conv.updated_at) }}</div>
-          <el-button
+          <Button
             class="conv-delete"
             size="small"
-            text
+            link
             @click.stop="deleteConversation(conv.id)"
           >
-            <el-icon><Delete /></el-icon>
-          </el-button>
+            <i class="pi pi-trash"></i>
+          </Button>
         </div>
       </div>
     </div>
@@ -32,56 +30,55 @@
           <h2>OpsNexus 运维知识助手</h2>
           <p>输入您的问题，获取服务器运维知识指导</p>
           <div class="quick-actions">
-            <el-button v-for="q in quickQuestions" :key="q" @click="askQuick(q)" round>{{ q }}</el-button>
+            <Button v-for="q in quickQuestions" :key="q" :label="q" rounded @click="askQuick(q)" />
           </div>
         </div>
         <div v-for="(msg, idx) in messages" :key="idx" :class="['message', msg.role]">
           <div class="message-avatar">
-            <el-icon :size="20"><User v-if="msg.role === 'user'" /><Monitor v-else /></el-icon>
+            <i v-if="msg.role === 'user'" class="pi pi-user" style="font-size: 20px"></i>
+            <i v-else class="pi pi-desktop" style="font-size: 20px"></i>
           </div>
           <div class="message-body">
             <div class="message-content" v-html="renderContent(msg.content)"></div>
             <div v-if="msg.sources && msg.sources.length" class="message-sources">
-              <el-collapse>
-                <el-collapse-item title="参考来源">
-                  <div v-for="(s, i) in msg.sources" :key="i" class="source-item">
-                    <span v-if="s.document_title" class="source-title">{{ s.document_title }}</span>
-                    <span v-if="s.chunk_text" class="source-text">{{ s.chunk_text.slice(0, 200) }}...</span>
-                  </div>
-                </el-collapse-item>
-              </el-collapse>
+              <Accordion>
+                <AccordionPanel value="0">
+                  <AccordionHeader>参考来源</AccordionHeader>
+                  <AccordionContent>
+                    <div v-for="(s, i) in msg.sources" :key="i" class="source-item">
+                      <span v-if="s.document_title" class="source-title">{{ s.document_title }}</span>
+                      <span v-if="s.chunk_text" class="source-text">{{ s.chunk_text.slice(0, 200) }}...</span>
+                    </div>
+                  </AccordionContent>
+                </AccordionPanel>
+              </Accordion>
             </div>
             <div v-if="msg.role === 'assistant'" class="message-actions">
-              <el-button size="small" text @click="copyMessage(msg.content)"><el-icon><CopyDocument /></el-icon> 复制</el-button>
-              <el-button size="small" text @click="favoriteMessage(msg)"><el-icon><Star /></el-icon> 收藏</el-button>
+              <Button size="small" link @click="copyMessage(msg.content)"><i class="pi pi-copy"></i> 复制</Button>
+              <Button size="small" link @click="favoriteMessage(msg)"><i class="pi pi-star"></i> 收藏</Button>
             </div>
           </div>
         </div>
         <div v-if="loading" class="message assistant">
-          <div class="message-avatar"><el-icon :size="20"><Monitor /></el-icon></div>
+          <div class="message-avatar"><i class="pi pi-desktop" style="font-size: 20px"></i></div>
           <div class="message-body"><div class="typing-indicator"><span></span><span></span><span></span></div></div>
         </div>
       </div>
       <div class="input-area">
         <div class="input-options">
-          <el-select v-model="queryBrand" placeholder="选择品牌" clearable size="small" style="width: 120px">
-            <el-option v-for="b in brands" :key="b" :label="b" :value="b" />
-          </el-select>
-          <el-select v-model="queryType" size="small" style="width: 120px">
-            <el-option label="AI问答" value="semantic" />
-            <el-option label="结构化查询" value="structured" />
-            <el-option label="混合查询" value="hybrid" />
-          </el-select>
+          <Select v-model="queryBrand" :options="brandOptions" optionLabel="label" optionValue="value" placeholder="选择品牌" showClear style="width: 120px" size="small" />
+          <Select v-model="queryType" :options="queryTypeOptions" optionLabel="label" optionValue="value" style="width: 120px" size="small" />
         </div>
         <div class="input-row">
-          <el-input
+          <InputText
             v-model="inputText"
             placeholder="输入您的运维问题..."
             @keyup.enter="handleSend"
             size="large"
             :disabled="loading"
+            style="flex: 1"
           />
-          <el-button type="primary" size="large" :loading="loading" @click="handleSend" :disabled="!inputText.trim()">发送</el-button>
+          <Button label="发送" :loading="loading" @click="handleSend" :disabled="!inputText.trim()" size="large" />
         </div>
       </div>
     </div>
@@ -90,10 +87,17 @@
 
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
+import { useToast } from 'primevue/usetoast'
+import Button from 'primevue/button'
+import Select from 'primevue/select'
+import InputText from 'primevue/inputtext'
+import Accordion from 'primevue/accordion'
+import AccordionPanel from 'primevue/accordionpanel'
+import AccordionHeader from 'primevue/accordionheader'
+import AccordionContent from 'primevue/accordioncontent'
 import { knowledgeApi } from '@/api/knowledge'
-import { ElMessage } from 'element-plus'
-import { User, Monitor, CopyDocument, Star, Plus, Delete } from '@element-plus/icons-vue'
 
+const toast = useToast()
 const chatAreaRef = ref()
 const inputText = ref('')
 const loading = ref(false)
@@ -103,7 +107,22 @@ const messages = ref<Array<{ role: string; content: string; sources?: any[]; mes
 const conversations = ref<Array<{ id: string; title: string; updated_at: string }>>([])
 const currentConversationId = ref<string | null>(null)
 
-const brands = ['Dell', 'HPE', 'Lenovo', 'Huawei', 'Inspur', 'H3C', 'Sugon', 'xFusion']
+const brandOptions = [
+  { label: 'Dell', value: 'Dell' },
+  { label: 'HPE', value: 'HPE' },
+  { label: 'Lenovo', value: 'Lenovo' },
+  { label: 'Huawei', value: 'Huawei' },
+  { label: 'Inspur', value: 'Inspur' },
+  { label: 'H3C', value: 'H3C' },
+  { label: 'Sugon', value: 'Sugon' },
+  { label: 'xFusion', value: 'xFusion' },
+]
+
+const queryTypeOptions = [
+  { label: 'AI问答', value: 'semantic' },
+  { label: '结构化查询', value: 'structured' },
+  { label: '混合查询', value: 'hybrid' },
+]
 
 const quickQuestions = [
   'Dell R750 CPU温度过高怎么处理？',
@@ -132,7 +151,7 @@ const loadConversations = async () => {
   try {
     const { data } = await knowledgeApi.listConversations({ limit: 50 })
     conversations.value = data.items || []
-  } catch {}
+  } catch { /* ignore */ }
 }
 
 const selectConversation = async (conv: { id: string; title: string; updated_at: string }) => {
@@ -148,7 +167,7 @@ const selectConversation = async (conv: { id: string; title: string; updated_at:
         message_id: m.id,
       }))
     }
-  } catch {}
+  } catch { /* ignore */ }
   scrollToBottom()
 }
 
@@ -159,7 +178,7 @@ const createNewConversation = async () => {
     messages.value = []
     await loadConversations()
   } catch {
-    ElMessage.error('创建对话失败')
+    toast.add({ severity: 'error', summary: '错误', detail: '创建对话失败', life: 3000 })
   }
 }
 
@@ -172,7 +191,7 @@ const deleteConversation = async (id: string) => {
     }
     await loadConversations()
   } catch {
-    ElMessage.error('删除失败')
+    toast.add({ severity: 'error', summary: '错误', detail: '删除失败', life: 3000 })
   }
 }
 
@@ -185,7 +204,7 @@ const handleSend = async () => {
       const { data } = await knowledgeApi.createConversation({ title: question.slice(0, 30) })
       currentConversationId.value = data.id
       await loadConversations()
-    } catch {}
+    } catch { /* ignore */ }
   }
 
   messages.value.push({ role: 'user', content: question })
@@ -222,7 +241,7 @@ const askQuick = (q: string) => {
 
 const copyMessage = (content: string) => {
   navigator.clipboard.writeText(content)
-  ElMessage.success('已复制')
+  toast.add({ severity: 'success', summary: '成功', detail: '已复制', life: 3000 })
 }
 
 const favoriteMessage = async (msg: any) => {
@@ -234,9 +253,9 @@ const favoriteMessage = async (msg: any) => {
       source_type: 'qa',
       brand: queryBrand.value || undefined,
     })
-    ElMessage.success('已收藏')
+    toast.add({ severity: 'success', summary: '成功', detail: '已收藏', life: 3000 })
   } catch {
-    ElMessage.error('收藏失败')
+    toast.add({ severity: 'error', summary: '错误', detail: '收藏失败', life: 3000 })
   }
 }
 
@@ -249,21 +268,21 @@ onMounted(() => {
 .knowledge-assistant {
   display: flex;
   height: calc(100vh - 120px);
-  background: #f5f7fa;
+  background: var(--surface-ground);
   border-radius: 8px;
   overflow: hidden;
 }
 .sidebar {
   width: 240px;
-  background: #fff;
-  border-right: 1px solid #ebeef5;
+  background: var(--surface-card);
+  border-right: 1px solid var(--surface-border);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
 }
 .sidebar-header {
   padding: 12px;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid var(--surface-border);
 }
 .conversation-list {
   flex: 1;
@@ -279,14 +298,14 @@ onMounted(() => {
   transition: background 0.2s;
 }
 .conversation-item:hover {
-  background: #f5f7fa;
+  background: var(--surface-hover);
 }
 .conversation-item.active {
-  background: #ecf5ff;
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
 }
 .conv-title {
   font-size: 13px;
-  color: #303133;
+  color: var(--text-color);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -294,7 +313,7 @@ onMounted(() => {
 }
 .conv-time {
   font-size: 11px;
-  color: #909399;
+  color: var(--text-color-secondary);
   margin-top: 4px;
 }
 .conv-delete {
@@ -324,11 +343,11 @@ onMounted(() => {
 }
 .welcome-section h2 {
   font-size: 24px;
-  color: #303133;
+  color: var(--text-color);
   margin-bottom: 8px;
 }
 .welcome-section p {
-  color: #909399;
+  color: var(--text-color-secondary);
   margin-bottom: 24px;
 }
 .quick-actions {
@@ -355,12 +374,12 @@ onMounted(() => {
   flex-shrink: 0;
 }
 .message.user .message-avatar {
-  background: #409eff;
-  color: white;
+  background: var(--primary-color);
+  color: var(--primary-contrast-color);
 }
 .message.assistant .message-avatar {
-  background: #67c23a;
-  color: white;
+  background: #22c55e;
+  color: #fff;
 }
 .message-body {
   max-width: 70%;
@@ -369,16 +388,17 @@ onMounted(() => {
   text-align: right;
 }
 .message-content {
-  background: white;
+  background: var(--surface-card);
   padding: 12px 16px;
   border-radius: 12px;
   line-height: 1.6;
   font-size: 14px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  color: var(--text-color);
 }
 .message.user .message-content {
-  background: #409eff;
-  color: white;
+  background: var(--primary-color);
+  color: var(--primary-contrast-color);
 }
 .message-sources {
   margin-top: 8px;
@@ -386,14 +406,14 @@ onMounted(() => {
 .source-item {
   padding: 4px 0;
   font-size: 12px;
-  color: #606266;
+  color: var(--text-color-secondary);
 }
 .source-title {
   font-weight: 500;
   margin-right: 8px;
 }
 .source-text {
-  color: #909399;
+  color: var(--text-color-secondary);
 }
 .message-actions {
   margin-top: 4px;
@@ -409,7 +429,7 @@ onMounted(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #c0c4cc;
+  background: var(--text-color-secondary);
   animation: typing 1.4s infinite;
 }
 .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
@@ -420,8 +440,8 @@ onMounted(() => {
 }
 .input-area {
   padding: 16px 20px;
-  background: white;
-  border-top: 1px solid #ebeef5;
+  background: var(--surface-card);
+  border-top: 1px solid var(--surface-border);
 }
 .input-options {
   display: flex;
@@ -431,8 +451,5 @@ onMounted(() => {
 .input-row {
   display: flex;
   gap: 8px;
-}
-.input-row .el-input {
-  flex: 1;
 }
 </style>

@@ -1,67 +1,91 @@
 <template>
   <div class="sel-query">
-    <el-card>
+    <Card>
       <template #header>
         <div class="card-header">
           <span>SEL 事件码查询</span>
         </div>
       </template>
-      <el-form :inline="true" :model="query" @submit.prevent="handleQuery">
-        <el-form-item label="品牌">
-          <el-select v-model="query.brand" placeholder="选择品牌" style="width: 140px">
-            <el-option v-for="b in brands" :key="b" :label="b" :value="b" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="事件码">
-          <el-input v-model="query.event_code" placeholder="如 0x2001" clearable style="width: 140px" />
-        </el-form-item>
-        <el-form-item label="严重级别">
-          <el-select v-model="query.severity" placeholder="全部" clearable style="width: 120px">
-            <el-option label="Critical" value="critical" />
-            <el-option label="Warning" value="warning" />
-            <el-option label="Info" value="info" />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleQuery" :loading="loading">查询</el-button>
-        </el-form-item>
-      </el-form>
-      <el-table :data="results" stripe v-loading="loading" :empty-text="emptyText">
-        <el-table-column prop="event_code" label="事件码" width="120" fixed />
-        <el-table-column prop="sensor_type" label="传感器类型" width="140" />
-        <el-table-column prop="severity" label="严重级别" width="110" align="center">
-          <template #default="{ row }">
-            <el-tag
-              :type="severityTagType(row.severity)"
-              :color="severityColor(row.severity)"
-              :style="{ color: severityTextColor(row.severity), borderColor: severityColor(row.severity) }"
-              size="small"
-              effect="dark"
-            >
-              {{ severityLabel(row.severity) }}
-            </el-tag>
+      <template #content>
+        <div class="form-inline" @submit.prevent="handleQuery">
+          <div class="field">
+            <label>品牌</label>
+            <Select v-model="query.brand" :options="brandOptions" optionLabel="label" optionValue="value" placeholder="选择品牌" style="width: 140px" showClear />
+          </div>
+          <div class="field">
+            <label>事件码</label>
+            <InputText v-model="query.event_code" placeholder="如 0x2001" style="width: 140px" />
+          </div>
+          <div class="field">
+            <label>严重级别</label>
+            <Select v-model="query.severity" :options="severityOptions" optionLabel="label" optionValue="value" placeholder="全部" style="width: 120px" showClear />
+          </div>
+          <div class="field">
+            <Button label="查询" :loading="loading" @click="handleQuery" />
+          </div>
+        </div>
+        <DataTable :value="results" :loading="loading" stripedRows>
+          <template #empty>
+            <div class="empty-state">{{ emptyText }}</div>
           </template>
-        </el-table-column>
-        <el-table-column prop="description" label="描述" min-width="240" show-overflow-tooltip />
-        <el-table-column prop="recommended_action" label="建议处理" min-width="240" show-overflow-tooltip>
-          <template #default="{ row }">
-            <span v-if="row.recommended_action">{{ row.recommended_action }}</span>
-            <span v-else class="text-muted">暂无建议</span>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
+          <Column field="event_code" header="事件码" style="width: 120px" />
+          <Column field="sensor_type" header="传感器类型" style="width: 140px" />
+          <Column field="severity" header="严重级别" style="width: 110px; text-align: center">
+            <template #body="{ data }">
+              <Tag :severity="severityTagSeverity(data.severity)" style="font-size: 12px">
+                {{ severityLabel(data.severity) }}
+              </Tag>
+            </template>
+          </Column>
+          <Column field="description" header="描述" style="min-width: 240px">
+            <template #body="{ data }">
+              <span v-if="data.description">{{ data.description }}</span>
+              <span v-else class="text-muted">暂无</span>
+            </template>
+          </Column>
+          <Column field="recommended_action" header="建议处理" style="min-width: 240px">
+            <template #body="{ data }">
+              <span v-if="data.recommended_action">{{ data.recommended_action }}</span>
+              <span v-else class="text-muted">暂无建议</span>
+            </template>
+          </Column>
+        </DataTable>
+      </template>
+    </Card>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
+import Card from 'primevue/card'
+import Select from 'primevue/select'
+import InputText from 'primevue/inputtext'
+import Button from 'primevue/button'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Tag from 'primevue/tag'
 import { knowledgeApi } from '@/api/knowledge'
 
 const loading = ref(false)
 const hasQueried = ref(false)
 const results = ref<any[]>([])
-const brands = ['Dell', 'HPE', 'Lenovo', 'Huawei', 'Inspur', 'H3C', 'Sugon', 'xFusion']
+
+const brandOptions = [
+  { label: 'Dell', value: 'Dell' },
+  { label: 'HPE', value: 'HPE' },
+  { label: 'Lenovo', value: 'Lenovo' },
+  { label: 'Huawei', value: 'Huawei' },
+  { label: 'Inspur', value: 'Inspur' },
+  { label: 'H3C', value: 'H3C' },
+  { label: 'Sugon', value: 'Sugon' },
+  { label: 'xFusion', value: 'xFusion' },
+]
+
+const severityOptions = [
+  { label: 'Critical', value: 'critical' },
+  { label: 'Warning', value: 'warning' },
+  { label: 'Info', value: 'info' },
+]
 
 const query = reactive({ brand: '', event_code: '', severity: '' })
 
@@ -70,20 +94,10 @@ const emptyText = computed(() => {
   return '未找到匹配的 SEL 事件码，请调整查询条件后重试'
 })
 
-const severityTagType = (s: string) => {
+const severityTagSeverity = (s: string) => {
   if (s === 'critical') return 'danger'
   if (s === 'warning') return 'warning'
-  return 'info'
-}
-
-const severityColor = (s: string) => {
-  if (s === 'critical') return '#f56c6c'
-  if (s === 'warning') return '#e6a23c'
-  return '#409eff'
-}
-
-const severityTextColor = (s: string) => {
-  return '#ffffff'
+  return 'secondary'
 }
 
 const severityLabel = (s: string) => {
@@ -115,4 +129,8 @@ const handleQuery = async () => {
 <style scoped>
 .card-header { display: flex; justify-content: space-between; align-items: center; }
 .text-muted { color: #c0c4cc; font-style: italic; }
+.form-inline { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 16px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 13px; color: #606266; }
+.empty-state { text-align: center; padding: 40px 0; color: #909399; }
 </style>

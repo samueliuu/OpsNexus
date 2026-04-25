@@ -1,0 +1,8 @@
+line-length = 150
+
+[lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[lint.per-file-ignores]
+"**/models.py" = ["F821"]

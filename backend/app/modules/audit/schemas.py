@@ -94,8 +94,6 @@ class NotificationLogResponse(BaseModel):
     related_alert_id: Optional[UUID]
     created_at: datetime
 
-    channel_name: Optional[str] = None
-
     class Config:
         from_attributes = True
 

@@ -157,7 +157,7 @@ router.beforeEach(async (to, _from, next) => {
   }
   if (authStore.isLoggedIn) {
     if (!authStore.user) {
-      try { await authStore.fetchUser() } catch {}
+      try { await authStore.fetchUser() } catch { /* ignore */ }
     }
     next()
   } else {

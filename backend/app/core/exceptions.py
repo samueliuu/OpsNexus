@@ -1,17 +1,16 @@
+import logging
 from typing import Any, Dict, Optional
 
 from fastapi import HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-import logging
-
 logger = logging.getLogger(__name__)
 
 
 class OpsNexusException(Exception):
     """Base exception for OpsNexus."""
-    
+
     def __init__(
         self,
         message: str,
@@ -28,7 +27,7 @@ class OpsNexusException(Exception):
 
 class NotFoundException(OpsNexusException):
     """Resource not found."""
-    
+
     def __init__(self, resource: str, resource_id: Optional[str] = None):
         message = f"{resource} not found"
         if resource_id:
@@ -42,7 +41,7 @@ class NotFoundException(OpsNexusException):
 
 class ConflictException(OpsNexusException):
     """Resource conflict."""
-    
+
     def __init__(self, message: str):
         super().__init__(
             message=message,
@@ -53,7 +52,7 @@ class ConflictException(OpsNexusException):
 
 class ValidationException(OpsNexusException):
     """Validation error."""
-    
+
     def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
         super().__init__(
             message=message,
@@ -65,7 +64,7 @@ class ValidationException(OpsNexusException):
 
 class AuthenticationException(OpsNexusException):
     """Authentication error."""
-    
+
     def __init__(self, message: str = "Authentication failed"):
         super().__init__(
             message=message,
@@ -76,7 +75,7 @@ class AuthenticationException(OpsNexusException):
 
 class AuthorizationException(OpsNexusException):
     """Authorization error."""
-    
+
     def __init__(self, message: str = "Permission denied"):
         super().__init__(
             message=message,
@@ -87,7 +86,7 @@ class AuthorizationException(OpsNexusException):
 
 class BMCConnectionException(OpsNexusException):
     """BMC connection error."""
-    
+
     def __init__(self, message: str = "Failed to connect to BMC"):
         super().__init__(
             message=message,
@@ -98,7 +97,7 @@ class BMCConnectionException(OpsNexusException):
 
 class BMCAuthenticationException(OpsNexusException):
     """BMC authentication error."""
-    
+
     def __init__(self, message: str = "BMC authentication failed"):
         super().__init__(
             message=message,
@@ -109,7 +108,7 @@ class BMCAuthenticationException(OpsNexusException):
 
 class RateLimitException(OpsNexusException):
     """Rate limit exceeded."""
-    
+
     def __init__(self, message: str = "Rate limit exceeded"):
         super().__init__(
             message=message,

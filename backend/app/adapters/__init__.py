@@ -9,11 +9,11 @@ from app.adapters.base import (
 
 # Import all adapters to trigger registration
 from app.adapters.dell import DellAdapter
+from app.adapters.h3c import H3CAdapter
 from app.adapters.hpe import HPEAdapter
-from app.adapters.lenovo import LenovoAdapter
 from app.adapters.huawei import HuaweiAdapter
 from app.adapters.inspur import InspurAdapter
-from app.adapters.h3c import H3CAdapter
+from app.adapters.lenovo import LenovoAdapter
 from app.adapters.sugon import SugonAdapter
 from app.adapters.xfusion import XFusionAdapter
 

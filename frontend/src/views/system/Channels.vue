@@ -1,90 +1,140 @@
 <template>
   <div>
-    <el-card shadow="never">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <h3 style="margin:0">通知渠道</h3>
-        <el-button type="primary" @click="showDialog()">新增渠道</el-button>
+    <Card>
+      <template #content>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3 style="margin:0">通知渠道</h3>
+          <Button @click="showDialog()">新增渠道</Button>
+        </div>
+        <DataTable :value="tableData" striped :loading="loading">
+          <Column field="name" header="名称" style="width:140px" />
+          <Column field="channel_type" header="类型" style="width:100px" />
+          <Column header="启用" style="width:80px">
+            <template #body="{ data }"><InputSwitch v-model="data.is_enabled" @change="toggleChannel(data)" /></template>
+          </Column>
+          <Column header="操作" style="width:150px">
+            <template #body="{ data }">
+              <div style="display:flex;gap:4px">
+                <Button link size="small" @click="showDialog(data)">编辑</Button>
+                <Button link severity="danger" size="small" @click="confirmDelete(data.id)">删除</Button>
+              </div>
+            </template>
+          </Column>
+        </DataTable>
+      </template>
+    </Card>
+    <Dialog v-model:visible="dialogVisible" :header="editingId ? '编辑渠道' : '新增渠道'" :style="{ width: '600px' }" :modal="true">
+      <div class="field">
+        <label>名称</label>
+        <InputText v-model="form.name" style="width:100%" />
+        <small v-if="errors.name" class="p-error">{{ errors.name }}</small>
       </div>
-      <el-table :data="tableData" stripe v-loading="loading">
-        <el-table-column prop="name" label="名称" width="140" />
-        <el-table-column prop="channel_type" label="类型" width="100" />
-        <el-table-column label="启用" width="80">
-          <template #default="{ row }"><el-switch v-model="row.is_enabled" @change="toggleChannel(row)" /></template>
-        </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
-          <template #default="{ row }">
-            <el-button text type="primary" size="small" @click="showDialog(row)">编辑</el-button>
-            <el-popconfirm title="确认删除?" @confirm="handleDelete(row.id)"><template #reference><el-button text type="danger" size="small">删除</el-button></template></el-popconfirm>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑渠道' : '新增渠道'" width="600px" destroy-on-close>
-      <el-form :model="form" :rules="formRules" ref="formRef" label-width="80px">
-        <el-form-item label="名称" prop="name"><el-input v-model="form.name" /></el-form-item>
-        <el-form-item label="类型" prop="channel_type">
-          <el-select v-model="form.channel_type" style="width:100%">
-            <el-option label="邮件" value="email" /><el-option label="Webhook" value="webhook" /><el-option label="钉钉" value="dingtalk" /><el-option label="企业微信" value="wecom" /><el-option label="飞书" value="lark" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="配置" prop="config">
-          <el-input v-model="configJson" type="textarea" :rows="8" placeholder="JSON 配置" />
-        </el-form-item>
-        <el-form-item label="启用"><el-switch v-model="form.is_enabled" /></el-form-item>
-      </el-form>
-      <template #footer><el-button @click="dialogVisible=false">取消</el-button><el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button></template>
-    </el-dialog>
+      <div class="field">
+        <label>类型</label>
+        <Select v-model="form.channel_type" :options="channelTypeOptions" optionLabel="label" optionValue="value" style="width:100%" />
+        <small v-if="errors.channel_type" class="p-error">{{ errors.channel_type }}</small>
+      </div>
+      <div class="field">
+        <label>配置</label>
+        <Textarea v-model="configJson" :rows="8" placeholder="JSON 配置" style="width:100%" />
+      </div>
+      <div class="field" style="display:flex;align-items:center;gap:8px">
+        <label style="margin:0">启用</label>
+        <InputSwitch v-model="form.is_enabled" />
+      </div>
+      <template #footer>
+        <Button label="取消" @click="dialogVisible = false" />
+        <Button label="确定" :loading="submitting" @click="handleSubmit" />
+      </template>
+    </Dialog>
+    <ConfirmDialog />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { channelApi } from '@/api/system'
-import { ElMessage } from 'element-plus'
+import { useToast } from 'primevue/usetoast'
+import { useConfirm } from 'primevue/useconfirm'
+import Card from 'primevue/card'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
+import Textarea from 'primevue/textarea'
+import Select from 'primevue/select'
+import InputSwitch from 'primevue/inputswitch'
+import ConfirmDialog from 'primevue/confirmdialog'
+
+const toast = useToast()
+const confirm = useConfirm()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
 const dialogVisible = ref(false)
 const submitting = ref(false)
 const editingId = ref('')
-const formRef = ref()
 const form = ref<any>({ name: '', channel_type: 'email', config: {}, is_enabled: true })
-const formRules = { name: [{ required: true, message: '请输入', trigger: 'blur' }], channel_type: [{ required: true }] }
+const errors = ref<Record<string, string>>({})
+
+const channelTypeOptions = [
+  { label: '邮件', value: 'email' },
+  { label: 'Webhook', value: 'webhook' },
+  { label: '钉钉', value: 'dingtalk' },
+  { label: '企业微信', value: 'wecom' },
+  { label: '飞书', value: 'lark' },
+]
 
 const configJson = computed({
   get: () => JSON.stringify(form.value.config, null, 2),
-  set: (v: string) => { try { form.value.config = JSON.parse(v) } catch { ElMessage.warning('JSON 格式无效') } },
+  set: (v: string) => { try { form.value.config = JSON.parse(v) } catch { toast.add({ severity: 'warn', summary: '警告', detail: 'JSON 格式无效', life: 3000 }) } },
 })
 
 onMounted(() => loadData())
 
 async function loadData() {
   loading.value = true
-  try { const { data } = await channelApi.list({ limit: 200 }); tableData.value = Array.isArray(data) ? data : (data.items || []) } catch { ElMessage.error('加载失败') } finally { loading.value = false }
+  try { const { data } = await channelApi.list({ limit: 200 }); tableData.value = Array.isArray(data) ? data : (data.items || []) } catch { toast.add({ severity: 'error', summary: '错误', detail: '加载失败', life: 3000 }) } finally { loading.value = false }
 }
 
 function showDialog(row?: any) {
   editingId.value = row?.id || ''
   form.value = row ? { name: row.name, channel_type: row.channel_type, config: row.config, is_enabled: row.is_enabled } : { name: '', channel_type: 'email', config: {}, is_enabled: true }
+  errors.value = {}
   dialogVisible.value = true
 }
 
+function validate(): boolean {
+  errors.value = {}
+  if (!form.value.name) errors.value.name = '请输入'
+  if (!form.value.channel_type) errors.value.channel_type = '请选择'
+  return Object.keys(errors.value).length === 0
+}
+
 async function handleSubmit() {
-  const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!validate()) return
   submitting.value = true
   try {
-    if (editingId.value) { await channelApi.update(editingId.value, form.value); ElMessage.success('更新成功') }
-    else { await channelApi.create(form.value); ElMessage.success('创建成功') }
+    if (editingId.value) { await channelApi.update(editingId.value, form.value); toast.add({ severity: 'success', summary: '成功', detail: '更新成功', life: 3000 }) }
+    else { await channelApi.create(form.value); toast.add({ severity: 'success', summary: '成功', detail: '创建成功', life: 3000 }) }
     dialogVisible.value = false; loadData()
-  } catch { ElMessage.error('操作失败') } finally { submitting.value = false }
+  } catch { toast.add({ severity: 'error', summary: '错误', detail: '操作失败', life: 3000 }) } finally { submitting.value = false }
 }
 
 async function toggleChannel(row: any) {
   try { await channelApi.update(row.id, { is_enabled: row.is_enabled }) } catch { row.is_enabled = !row.is_enabled }
 }
 
-async function handleDelete(id: string) {
-  try { await channelApi.delete(id); ElMessage.success('删除成功'); loadData() } catch { ElMessage.error('删除失败') }
+function confirmDelete(id: string) {
+  confirm.require({
+    message: '确认删除?',
+    header: '删除确认',
+    icon: 'pi pi-exclamation-triangle',
+    acceptProps: { severity: 'danger' },
+    accept: async () => {
+      try { await channelApi.delete(id); toast.add({ severity: 'success', summary: '成功', detail: '删除成功', life: 3000 }); loadData() } catch { toast.add({ severity: 'error', summary: '错误', detail: '删除失败', life: 3000 }) }
+    },
+  })
 }
 </script>

@@ -5,7 +5,6 @@ from fastapi import APIRouter, Depends, Query, status
 
 from app.core.config import settings
 from app.modules.asset.schemas import (
-    BMCCredentialCreate,
     BMCCredentialResponse,
     BMCCredentialUpdate,
     DataCenterCreate,
@@ -32,7 +31,6 @@ from app.modules.asset.service import (
 )
 from app.modules.system.dependencies import (
     PermissionChecker,
-    get_current_active_user,
     get_db,
 )
 

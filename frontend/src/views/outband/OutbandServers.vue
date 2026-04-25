@@ -1,71 +1,85 @@
 <template>
   <div>
-    <el-card shadow="never">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <h3 style="margin:0">服务器带外管理</h3>
-        <el-button type="primary" @click="testDialogVisible = true">测试连接</el-button>
-      </div>
-      <el-table :data="tableData" stripe v-loading="loading">
-        <el-table-column prop="name" label="服务器" min-width="120" />
-        <el-table-column prop="brand" label="品牌" width="80" />
-        <el-table-column label="BMC IP" width="140">
-          <template #default="{ row }">{{ row.bmc_info?.bmc_ip || '-' }}</template>
-        </el-table-column>
-        <el-table-column label="BMC状态" width="90">
-          <template #default="{ row }"><el-tag :type="row.bmc_info?.bmc_status === 'online' ? 'success' : row.bmc_info?.bmc_status === 'error' ? 'danger' : 'info'" size="small">{{ row.bmc_info?.bmc_status || '未知' }}</el-tag></template>
-        </el-table-column>
-        <el-table-column label="操作" width="320" fixed="right">
-          <template #default="{ row }">
-            <el-button text type="primary" size="small" @click="loadPower(row)" :disabled="!row.bmc_ip">电源</el-button>
-            <el-button text type="success" size="small" @click="loadSensors(row)" :disabled="!row.bmc_ip">传感器</el-button>
-            <el-button text type="warning" size="small" @click="loadFirmware(row)" :disabled="!row.bmc_ip">固件</el-button>
-            <el-button text type="info" size="small" @click="openKvm(row)" :disabled="!row.bmc_ip">KVM</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
-    <el-dialog v-model="powerDialogVisible" title="电源控制" width="400px">
+    <Card>
+      <template #content>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3 style="margin:0">服务器带外管理</h3>
+          <Button @click="testDialogVisible = true">测试连接</Button>
+        </div>
+        <DataTable :value="tableData" striped :loading="loading">
+          <Column field="name" header="服务器" style="min-width:120px" />
+          <Column field="brand" header="品牌" style="width:80px" />
+          <Column header="BMC IP" style="width:140px">
+            <template #body="{ data }">{{ data.bmc_info?.bmc_ip || '-' }}</template>
+          </Column>
+          <Column header="BMC状态" style="width:90px">
+            <template #body="{ data }"><Tag :severity="data.bmc_info?.bmc_status === 'online' ? 'success' : data.bmc_info?.bmc_status === 'error' ? 'danger' : 'secondary'" style="font-size:12px">{{ data.bmc_info?.bmc_status || '未知' }}</Tag></template>
+          </Column>
+          <Column header="操作" style="width:320px">
+            <template #body="{ data }">
+              <div style="display:flex;gap:4px">
+                <Button link size="small" @click="loadPower(data)" :disabled="!data.bmc_ip">电源</Button>
+                <Button link size="small" severity="success" @click="loadSensors(data)" :disabled="!data.bmc_ip">传感器</Button>
+                <Button link size="small" severity="warning" @click="loadFirmware(data)" :disabled="!data.bmc_ip">固件</Button>
+                <Button link size="small" severity="secondary" @click="openKvm(data)" :disabled="!data.bmc_ip">KVM</Button>
+              </div>
+            </template>
+          </Column>
+        </DataTable>
+      </template>
+    </Card>
+    <Dialog v-model:visible="powerDialogVisible" header="电源控制" :style="{ width: '400px' }">
       <div v-if="currentPower" style="margin-bottom:16px">
-        当前状态: <el-tag :type="currentPower.power_state === 'on' ? 'success' : 'danger'">{{ currentPower.power_state }}</el-tag>
+        当前状态: <Tag :severity="currentPower.power_state === 'on' ? 'success' : 'danger'">{{ currentPower.power_state }}</Tag>
       </div>
-      <el-button-group>
-        <el-button type="success" @click="doPower('on')">开机</el-button>
-        <el-button type="danger" @click="doPower('graceful_off')">关机</el-button>
-        <el-button type="warning" @click="doPower('restart')">重启</el-button>
-        <el-button @click="doPower('force_off')">强制关机</el-button>
-      </el-button-group>
-    </el-dialog>
-    <el-dialog v-model="sensorDialogVisible" title="传感器数据" width="700px">
-      <el-table :data="sensorData" stripe max-height="400">
-        <el-table-column prop="name" label="名称" min-width="150" />
-        <el-table-column label="读数" width="120"><template #default="{ row }">{{ row.reading ?? '-' }} {{ row.unit }}</template></el-table-column>
-        <el-table-column prop="status" label="状态" width="80" />
-        <el-table-column prop="sensor_type" label="类型" width="100" />
-      </el-table>
-    </el-dialog>
-    <el-dialog v-model="firmwareDialogVisible" title="固件清单" width="600px">
-      <el-table :data="firmwareData" stripe max-height="400">
-        <el-table-column prop="component" label="组件" min-width="120" />
-        <el-table-column prop="current_version" label="当前版本" width="150" />
-        <el-table-column prop="available_version" label="可用版本" width="150" />
-        <el-table-column prop="update_status" label="状态" width="100" />
-      </el-table>
-    </el-dialog>
-    <el-dialog v-model="testDialogVisible" title="测试BMC连接" width="450px" destroy-on-close>
-      <el-form :model="testForm" label-width="80px">
-        <el-form-item label="地址"><el-input v-model="testForm.host" /></el-form-item>
-        <el-form-item label="用户名"><el-input v-model="testForm.username" /></el-form-item>
-        <el-form-item label="密码"><el-input v-model="testForm.password" type="password" show-password /></el-form-item>
-      </el-form>
+      <div style="display:flex;gap:4px">
+        <Button severity="success" @click="doPower('on')">开机</Button>
+        <Button severity="danger" @click="doPower('graceful_off')">关机</Button>
+        <Button severity="warning" @click="doPower('restart')">重启</Button>
+        <Button @click="doPower('force_off')">强制关机</Button>
+      </div>
+    </Dialog>
+    <Dialog v-model:visible="sensorDialogVisible" header="传感器数据" :style="{ width: '700px' }">
+      <DataTable :value="sensorData" striped :scrollable="true" scrollHeight="400px">
+        <Column field="name" header="名称" style="min-width:150px" />
+        <Column header="读数" style="width:120px"><template #body="{ data }">{{ data.reading ?? '-' }} {{ data.unit }}</template></Column>
+        <Column field="status" header="状态" style="width:80px" />
+        <Column field="sensor_type" header="类型" style="width:100px" />
+      </DataTable>
+    </Dialog>
+    <Dialog v-model:visible="firmwareDialogVisible" header="固件清单" :style="{ width: '600px' }">
+      <DataTable :value="firmwareData" striped :scrollable="true" scrollHeight="400px">
+        <Column field="component" header="组件" style="min-width:120px" />
+        <Column field="current_version" header="当前版本" style="width:150px" />
+        <Column field="available_version" header="可用版本" style="width:150px" />
+        <Column field="update_status" header="状态" style="width:100px" />
+      </DataTable>
+    </Dialog>
+    <Dialog v-model:visible="testDialogVisible" header="测试BMC连接" :style="{ width: '450px' }" :modal="true">
+      <div class="field">
+        <label>地址</label>
+        <InputText v-model="testForm.host" style="width:100%" />
+      </div>
+      <div class="field">
+        <label>用户名</label>
+        <InputText v-model="testForm.username" style="width:100%" />
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <InputText v-model="testForm.password" type="password" style="width:100%" />
+      </div>
       <div v-if="testResult" style="margin-top:12px">
-        <el-alert :type="testResult.success ? 'success' : 'error'" :title="testResult.message" show-icon :closable="false" />
-        <el-descriptions v-if="testResult.success" :column="1" border style="margin-top:12px" size="small">
-          <el-descriptions-item label="品牌">{{ testResult.detected_brand }}</el-descriptions-item>
-          <el-descriptions-item label="型号">{{ testResult.model }}</el-descriptions-item>
-        </el-descriptions>
+        <Message :severity="testResult.success ? 'success' : 'error'">{{ testResult.message }}</Message>
+        <div v-if="testResult.success" style="margin-top:12px;display:grid;grid-template-columns:auto 1fr;gap:8px 16px;border:1px solid var(--p-surface-200);border-radius:6px;padding:12px">
+          <span style="font-weight:500;color:var(--p-text-muted-color)">品牌</span><span>{{ testResult.detected_brand }}</span>
+          <span style="font-weight:500;color:var(--p-text-muted-color)">型号</span><span>{{ testResult.model }}</span>
+        </div>
       </div>
-      <template #footer><el-button @click="testDialogVisible=false">关闭</el-button><el-button type="primary" :loading="testLoading" @click="doTest">测试</el-button></template>
-    </el-dialog>
+      <template #footer>
+        <Button label="关闭" @click="testDialogVisible=false" />
+        <Button label="测试" :loading="testLoading" @click="doTest" />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -73,7 +87,19 @@
 import { ref, onMounted } from 'vue'
 import { serverApi } from '@/api/asset'
 import { outbandApi } from '@/api/outband-audit'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { useToast } from 'primevue/usetoast'
+import { useConfirm } from 'primevue/useconfirm'
+import Card from 'primevue/card'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Tag from 'primevue/tag'
+import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
+import Message from 'primevue/message'
+
+const toast = useToast()
+const confirm = useConfirm()
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -96,7 +122,7 @@ async function loadData() {
   try {
     const { data } = await serverApi.list({ limit: 200 })
     tableData.value = data.items || []
-  } catch { ElMessage.error('加载失败') } finally { loading.value = false }
+  } catch { toast.add({ severity: 'error', summary: '错误', detail: '加载失败', life: 3000 }) } finally { loading.value = false }
 }
 
 async function loadPower(row: any) {
@@ -105,16 +131,23 @@ async function loadPower(row: any) {
     currentPower.value = data
     currentServerId.value = row.id
     powerDialogVisible.value = true
-  } catch { ElMessage.error('操作失败') }
+  } catch { toast.add({ severity: 'error', summary: '错误', detail: '操作失败', life: 3000 }) }
 }
 
 async function doPower(action: string) {
-  try {
-    await ElMessageBox.confirm(`确认执行${action}操作？`, '电源操作', { type: 'warning' })
-    await outbandApi.setPowerAction(currentServerId.value, action)
-    ElMessage.success('操作已发送')
-    powerDialogVisible.value = false
-  } catch { ElMessage.error('操作失败') }
+  confirm.require({
+    message: `确认执行${action}操作？`,
+    header: '电源操作',
+    icon: 'pi pi-exclamation-triangle',
+    acceptProps: { severity: 'warning' },
+    accept: async () => {
+      try {
+        await outbandApi.setPowerAction(currentServerId.value, action)
+        toast.add({ severity: 'success', summary: '成功', detail: '操作已发送', life: 3000 })
+        powerDialogVisible.value = false
+      } catch { toast.add({ severity: 'error', summary: '错误', detail: '操作失败', life: 3000 }) }
+    },
+  })
 }
 
 async function loadSensors(row: any) {
@@ -122,7 +155,7 @@ async function loadSensors(row: any) {
     const { data } = await outbandApi.getSensorData(row.id)
     sensorData.value = data.sensors || []
     sensorDialogVisible.value = true
-  } catch { ElMessage.error('操作失败') }
+  } catch { toast.add({ severity: 'error', summary: '错误', detail: '操作失败', life: 3000 }) }
 }
 
 async function loadFirmware(row: any) {
@@ -130,15 +163,15 @@ async function loadFirmware(row: any) {
     const { data } = await outbandApi.getFirmware(row.id)
     firmwareData.value = data.firmware || []
     firmwareDialogVisible.value = true
-  } catch { ElMessage.error('操作失败') }
+  } catch { toast.add({ severity: 'error', summary: '错误', detail: '操作失败', life: 3000 }) }
 }
 
 async function openKvm(row: any) {
   try {
     const { data } = await outbandApi.startKvm(row.id)
     const expires = data.expires_at ? new Date(data.expires_at).toLocaleString() : '未知'
-    ElMessage.success(`KVM会话已创建，有效期至 ${expires}`)
-  } catch { ElMessage.error('操作失败') }
+    toast.add({ severity: 'success', summary: '成功', detail: `KVM会话已创建，有效期至 ${expires}`, life: 3000 })
+  } catch { toast.add({ severity: 'error', summary: '错误', detail: '操作失败', life: 3000 }) }
 }
 
 async function doTest() {
@@ -147,6 +180,6 @@ async function doTest() {
   try {
     const { data } = await outbandApi.testConnection(testForm.value)
     testResult.value = data
-  } catch { ElMessage.error('连接测试失败') } finally { testLoading.value = false }
+  } catch { toast.add({ severity: 'error', summary: '错误', detail: '连接测试失败', life: 3000 }) } finally { testLoading.value = false }
 }
 </script>

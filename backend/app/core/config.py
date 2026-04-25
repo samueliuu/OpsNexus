@@ -16,8 +16,8 @@ class Settings(BaseSettings):
     environment: Literal["development", "testing", "staging", "production"] = "development"
     debug: bool = False
 
-    app_name: str = "OpsNexus"
-    app_version: str = "1.0.0"
+    app_name: str = "衡驭OpsNexus智能服务器运维系统"
+    app_version: str = "0.1.1"
 
     database_url: str = "postgresql+asyncpg://opsnexus:opsnexus_dev@localhost:5432/opsnexus"
     db_pool_size: int = 20

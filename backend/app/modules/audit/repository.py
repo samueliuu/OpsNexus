@@ -3,17 +3,17 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
-
-def _escape_like(s: str) -> str:
-    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-
 from sqlalchemy import and_, delete, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.core.exceptions import NotFoundException
 from app.core.logging import get_logger
 from app.modules.audit.models import AuditLog, NotificationLog
+
+
+def _escape_like(s: str) -> str:
+    return s.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 logger = get_logger(__name__)
 
@@ -220,7 +220,9 @@ class NotificationLogRepository:
         total = total_result.scalar() or 0
 
         result = await self.session.execute(
-            query.order_by(desc(NotificationLog.created_at)).offset(skip).limit(limit)
+            query.order_by(desc(NotificationLog.created_at))
+            .offset(skip).limit(limit)
+            .options(joinedload(NotificationLog.channel))
         )
         return result.scalars().all(), total
 

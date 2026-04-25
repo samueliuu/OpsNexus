@@ -5,18 +5,20 @@ from sqlalchemy.orm import declarative_base
 
 from app.core.config import settings
 
-# Create async engine
-engine = create_async_engine(
-    settings.database_url,
-    pool_size=settings.db_pool_size,
-    max_overflow=settings.db_max_overflow,
-    pool_timeout=settings.db_pool_timeout,
-    pool_recycle=settings.db_pool_recycle,
-    pool_pre_ping=settings.db_pool_pre_ping,
-    echo=settings.debug,
-)
+_is_sqlite = settings.database_url.startswith("sqlite")
 
-# Create async session factory
+_engine_kwargs = {"echo": settings.debug}
+if not _is_sqlite:
+    _engine_kwargs.update(
+        pool_size=settings.db_pool_size,
+        max_overflow=settings.db_max_overflow,
+        pool_timeout=settings.db_pool_timeout,
+        pool_recycle=settings.db_pool_recycle,
+        pool_pre_ping=settings.db_pool_pre_ping,
+    )
+
+engine = create_async_engine(settings.database_url, **_engine_kwargs)
+
 AsyncSessionLocal = async_sessionmaker(
     engine,
     class_=AsyncSession,
@@ -25,7 +27,6 @@ AsyncSessionLocal = async_sessionmaker(
     autoflush=False,
 )
 
-# Create base class for models
 Base = declarative_base()
 
 
@@ -45,4 +46,11 @@ async def close_db():
 
 async def init_db():
     async with engine.begin() as conn:
+        if _is_sqlite:
+            await conn.execute(
+                __import__("sqlalchemy").text("PRAGMA journal_mode=WAL")
+            )
+            await conn.execute(
+                __import__("sqlalchemy").text("PRAGMA foreign_keys=ON")
+            )
         await conn.run_sync(Base.metadata.create_all)

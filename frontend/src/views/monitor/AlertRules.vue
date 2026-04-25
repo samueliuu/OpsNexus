@@ -1,92 +1,215 @@
 <template>
   <div>
-    <el-card shadow="never">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <h3 style="margin:0">告警规则</h3>
-        <el-button type="primary" @click="showDialog()">新增规则</el-button>
+    <Card>
+      <template #content>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3 style="margin:0">告警规则</h3>
+          <Button label="新增规则" @click="showDialog()" />
+        </div>
+        <DataTable :value="tableData" stripedRows :loading="loading">
+          <Column field="name" header="规则名称" style="min-width:140px" />
+          <Column field="metric_name" header="指标" style="width:160px" />
+          <Column header="条件" style="width:180px">
+            <template #body="{ data }">{{ data.metric_name }} {{ condMap[data.condition] || data.condition }} {{ data.threshold }} {{ data.duration > 0 ? `(持续${data.duration}s)` : '' }}</template>
+          </Column>
+          <Column header="严重级别" style="width:90px">
+            <template #body="{ data }">
+              <Tag :severity="sevSeverity(data.severity)">{{ data.severity }}</Tag>
+            </template>
+          </Column>
+          <Column header="状态" style="width:80px">
+            <template #body="{ data }">
+              <InputSwitch v-model="data.is_enabled" @change="toggleRule(data)" />
+            </template>
+          </Column>
+          <Column header="操作" style="width:150px" frozen alignFrozen="right">
+            <template #body="{ data }">
+              <Button label="编辑" link size="small" @click="showDialog(data)" />
+              <Button label="删除" link severity="danger" size="small" @click="confirmDelete(data.id)" />
+            </template>
+          </Column>
+        </DataTable>
+      </template>
+    </Card>
+    <Dialog v-model:visible="dialogVisible" :header="editingId ? '编辑规则' : '新增规则'" :style="{ width: '550px' }" :modal="true">
+      <div class="form-grid">
+        <div class="field">
+          <label>规则名称</label>
+          <InputText v-model="form.name" class="w-full" :class="{ 'p-invalid': errors.name }" />
+          <small v-if="errors.name" class="p-error">{{ errors.name }}</small>
+        </div>
+        <div class="field">
+          <label>指标</label>
+          <InputText v-model="form.metric_name" placeholder="如 cpu_temperature_celsius" class="w-full" :class="{ 'p-invalid': errors.metric_name }" />
+          <small v-if="errors.metric_name" class="p-error">{{ errors.metric_name }}</small>
+        </div>
+        <div class="condition-row">
+          <div class="field">
+            <label>条件</label>
+            <Select v-model="form.condition" :options="condOptions" optionLabel="label" optionValue="value" class="w-full" />
+          </div>
+          <div class="field">
+            <label>阈值</label>
+            <InputNumber v-model="form.threshold" class="w-full" />
+          </div>
+          <div class="field">
+            <label>持续(s)</label>
+            <InputNumber v-model="form.duration" :min="0" class="w-full" />
+          </div>
+        </div>
+        <div class="field">
+          <label>严重级别</label>
+          <Select v-model="form.severity" :options="severityOptions" optionLabel="label" optionValue="value" class="w-full" />
+        </div>
       </div>
-      <el-table :data="tableData" stripe v-loading="loading">
-        <el-table-column prop="name" label="规则名称" min-width="140" />
-        <el-table-column prop="metric_name" label="指标" width="160" />
-        <el-table-column label="条件" width="180">
-          <template #default="{ row }">{{ row.metric_name }} {{ condMap[row.condition] || row.condition }} {{ row.threshold }} {{ row.duration > 0 ? `(持续${row.duration}s)` : '' }}</template>
-        </el-table-column>
-        <el-table-column label="严重级别" width="90">
-          <template #default="{ row }"><el-tag :type="sevType(row.severity)" size="small">{{ row.severity }}</el-tag></template>
-        </el-table-column>
-        <el-table-column label="状态" width="80">
-          <template #default="{ row }"><el-switch v-model="row.is_enabled" @change="toggleRule(row)" /></template>
-        </el-table-column>
-        <el-table-column label="操作" width="150" fixed="right">
-          <template #default="{ row }">
-            <el-button text type="primary" size="small" @click="showDialog(row)">编辑</el-button>
-            <el-popconfirm title="确认删除?" @confirm="handleDelete(row.id)"><template #reference><el-button text type="danger" size="small">删除</el-button></template></el-popconfirm>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
-    <el-dialog v-model="dialogVisible" :title="editingId ? '编辑规则' : '新增规则'" width="550px" destroy-on-close>
-      <el-form :model="form" :rules="formRules" ref="formRef" label-width="90px">
-        <el-form-item label="规则名称" prop="name"><el-input v-model="form.name" /></el-form-item>
-        <el-form-item label="指标" prop="metric_name"><el-input v-model="form.metric_name" placeholder="如 cpu_temperature_celsius" /></el-form-item>
-        <el-row :gutter="16">
-          <el-col :span="8"><el-form-item label="条件" prop="condition"><el-select v-model="form.condition" style="width:100%"><el-option v-for="(v,k) in condMap" :key="k" :label="v" :value="k" /></el-select></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="阈值" prop="threshold"><el-input-number v-model="form.threshold" style="width:100%" /></el-form-item></el-col>
-          <el-col :span="8"><el-form-item label="持续(s)"><el-input-number v-model="form.duration" :min="0" style="width:100%" /></el-form-item></el-col>
-        </el-row>
-        <el-form-item label="严重级别" prop="severity"><el-select v-model="form.severity" style="width:100%"><el-option label="严重" value="critical" /><el-option label="警告" value="warning" /><el-option label="信息" value="info" /></el-select></el-form-item>
-      </el-form>
-      <template #footer><el-button @click="dialogVisible=false">取消</el-button><el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button></template>
-    </el-dialog>
+      <template #footer>
+        <Button label="取消" severity="secondary" @click="dialogVisible = false" />
+        <Button label="确定" :loading="submitting" @click="handleSubmit" />
+      </template>
+    </Dialog>
+    <ConfirmDialog />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import Card from 'primevue/card'
+import Button from 'primevue/button'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Tag from 'primevue/tag'
+import InputSwitch from 'primevue/inputswitch'
+import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
+import InputNumber from 'primevue/inputnumber'
+import Select from 'primevue/select'
+import ConfirmDialog from 'primevue/confirmdialog'
+import { useConfirm } from 'primevue/useconfirm'
+import { useToast } from 'primevue/usetoast'
 import { monitorApi } from '@/api/monitor'
-import { ElMessage } from 'element-plus'
+
+const toast = useToast()
+const confirm = useConfirm()
 
 const condMap: Record<string, string> = { gt: '>', lt: '<', eq: '=', ne: '≠', ge: '≥', le: '≤' }
+const condOptions = Object.entries(condMap).map(([value, label]) => ({ label, value }))
+const severityOptions = [
+  { label: '严重', value: 'critical' },
+  { label: '警告', value: 'warning' },
+  { label: '信息', value: 'info' },
+]
+
 const loading = ref(false)
 const tableData = ref<any[]>([])
 const dialogVisible = ref(false)
 const submitting = ref(false)
 const editingId = ref('')
-const formRef = ref()
 const form = ref<any>({ name: '', metric_name: '', condition: 'gt', threshold: 0, duration: 60, severity: 'warning', is_enabled: true })
-const formRules = { name: [{ required: true, message: '请输入', trigger: 'blur' }], metric_name: [{ required: true, message: '请输入', trigger: 'blur' }], condition: [{ required: true }], threshold: [{ required: true }], severity: [{ required: true }] }
+const errors = ref<Record<string, string>>({})
 
 onMounted(() => loadData())
 
 async function loadData() {
   loading.value = true
-  try { const { data } = await monitorApi.alertRules.list({ limit: 200 }); tableData.value = data.items || [] } catch { ElMessage.error('加载失败') } finally { loading.value = false }
+  try {
+    const { data } = await monitorApi.alertRules.list({ limit: 200 })
+    tableData.value = data.items || []
+  } catch {
+    toast.add({ severity: 'error', summary: '错误', detail: '加载失败', life: 3000 })
+  } finally {
+    loading.value = false
+  }
 }
 
-function sevType(s: string) { return { critical: 'danger', warning: 'warning', info: 'info' }[s] || 'info' }
+function sevSeverity(s: string) {
+  return { critical: 'danger', warning: 'warning', info: 'secondary' }[s] || 'secondary'
+}
 
 function showDialog(row?: any) {
   editingId.value = row?.id || ''
-  form.value = row ? { name: row.name, metric_name: row.metric_name, condition: row.condition, threshold: row.threshold, duration: row.duration, severity: row.severity, is_enabled: row.is_enabled } : { name: '', metric_name: '', condition: 'gt', threshold: 0, duration: 60, severity: 'warning', is_enabled: true }
+  form.value = row
+    ? { name: row.name, metric_name: row.metric_name, condition: row.condition, threshold: row.threshold, duration: row.duration, severity: row.severity, is_enabled: row.is_enabled }
+    : { name: '', metric_name: '', condition: 'gt', threshold: 0, duration: 60, severity: 'warning', is_enabled: true }
+  errors.value = {}
   dialogVisible.value = true
 }
 
+function validateForm(): boolean {
+  errors.value = {}
+  if (!form.value.name) errors.value.name = '请输入'
+  if (!form.value.metric_name) errors.value.metric_name = '请输入'
+  return Object.keys(errors.value).length === 0
+}
+
 async function handleSubmit() {
-  const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!validateForm()) return
   submitting.value = true
   try {
-    if (editingId.value) { await monitorApi.alertRules.update(editingId.value, form.value); ElMessage.success('更新成功') }
-    else { await monitorApi.alertRules.create(form.value); ElMessage.success('创建成功') }
-    dialogVisible.value = false; loadData()
-  } catch { ElMessage.error('操作失败') } finally { submitting.value = false }
+    if (editingId.value) {
+      await monitorApi.alertRules.update(editingId.value, form.value)
+      toast.add({ severity: 'success', summary: '成功', detail: '更新成功', life: 3000 })
+    } else {
+      await monitorApi.alertRules.create(form.value)
+      toast.add({ severity: 'success', summary: '成功', detail: '创建成功', life: 3000 })
+    }
+    dialogVisible.value = false
+    loadData()
+  } catch {
+    toast.add({ severity: 'error', summary: '错误', detail: '操作失败', life: 3000 })
+  } finally {
+    submitting.value = false
+  }
 }
 
 async function toggleRule(row: any) {
-  try { await monitorApi.alertRules.update(row.id, { is_enabled: row.is_enabled }) } catch { row.is_enabled = !row.is_enabled }
+  try {
+    await monitorApi.alertRules.update(row.id, { is_enabled: row.is_enabled })
+  } catch {
+    row.is_enabled = !row.is_enabled
+  }
+}
+
+function confirmDelete(id: string) {
+  confirm.require({
+    message: '确认删除?',
+    header: '确认',
+    icon: 'pi pi-exclamation-triangle',
+    accept: () => handleDelete(id)
+  })
 }
 
 async function handleDelete(id: string) {
-  try { await monitorApi.alertRules.delete(id); ElMessage.success('删除成功'); loadData() } catch { ElMessage.error('删除失败') }
+  try {
+    await monitorApi.alertRules.delete(id)
+    toast.add({ severity: 'success', summary: '成功', detail: '删除成功', life: 3000 })
+    loadData()
+  } catch {
+    toast.add({ severity: 'error', summary: '错误', detail: '删除失败', life: 3000 })
+  }
 }
 </script>
+
+<style scoped>
+.form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.condition-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.field label {
+  font-size: 14px;
+  font-weight: 500;
+}
+.w-full {
+  width: 100%;
+}
+</style>

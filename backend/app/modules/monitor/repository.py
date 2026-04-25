@@ -62,7 +62,7 @@ class MetricDefinitionRepository:
     async def list_active_by_method(self, collection_method: str) -> List[MetricDefinition]:
         result = await self.session.execute(
             select(MetricDefinition).where(
-                MetricDefinition.is_active == True,
+                MetricDefinition.is_active.is_(True),
                 MetricDefinition.collection_method == collection_method,
             ).order_by(MetricDefinition.name)
         )
@@ -262,7 +262,7 @@ class AlertRuleRepository:
 
     async def list_enabled(self) -> List[AlertRule]:
         result = await self.session.execute(
-            select(AlertRule).where(AlertRule.is_enabled == True)
+            select(AlertRule).where(AlertRule.is_enabled.is_(True))
             .order_by(AlertRule.name)
         )
         return result.scalars().all()

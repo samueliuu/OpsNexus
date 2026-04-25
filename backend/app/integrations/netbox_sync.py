@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.integrations.netbox_client import NetBoxClient
-from app.modules.asset.models import DataCenter, Rack, Server
+from app.modules.asset.models import DataCenter, Server
 from app.modules.asset.repository import DataCenterRepository, RackRepository, ServerRepository
 
 logger = get_logger(__name__)

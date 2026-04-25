@@ -26,7 +26,6 @@ from app.modules.autoops.service import (
 from app.modules.system.dependencies import (
     PermissionChecker,
     get_current_active_user,
-    get_current_user,
     get_db,
 )
 from app.modules.system.models import User

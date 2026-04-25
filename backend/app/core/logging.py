@@ -1,6 +1,5 @@
 import logging
 import sys
-from typing import Any, Dict
 
 import structlog
 
@@ -9,14 +8,14 @@ from app.core.config import settings
 
 def setup_logging():
     """Configure structured logging."""
-    
+
     # Configure standard library logging
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
         level=getattr(logging, settings.log_level),
     )
-    
+
     # Configure structlog
     structlog.configure(
         processors=[
@@ -26,7 +25,7 @@ def setup_logging():
             structlog.stdlib.ExtraAdder(),
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
-            structlog.processors.JSONRenderer() if settings.environment == "production" 
+            structlog.processors.JSONRenderer() if settings.environment == "production"
             else structlog.dev.ConsoleRenderer(),
         ],
         wrapper_class=structlog.make_filtering_bound_logger(
@@ -56,7 +55,6 @@ class LoggingMiddleware:
         import uuid
 
         from starlette.requests import Request
-        from starlette.responses import Response
 
         request = Request(scope, receive)
 

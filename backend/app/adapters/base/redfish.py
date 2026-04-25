@@ -1,5 +1,4 @@
 import asyncio
-import ssl
 from typing import Any, Dict, Optional
 
 import httpx
@@ -7,7 +6,7 @@ import redfish as dmtf_redfish
 from redfish.rest.v1 import InvalidCredentialsError, SessionCreationError
 
 from app.adapters.base.types import BMCConnection
-from app.core.exceptions import BMCConnectionException, BMCAuthenticationException
+from app.core.exceptions import BMCAuthenticationException, BMCConnectionException
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -81,8 +80,8 @@ class RedfishClient:
 
             if not self.verify_ssl:
                 try:
-                    from requests.adapters import HTTPAdapter
                     import urllib3
+                    from requests.adapters import HTTPAdapter
 
                     class NoVerifyAdapter(HTTPAdapter):
                         def init_poolmanager(self, *args, **kwargs):

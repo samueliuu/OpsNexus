@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -12,9 +14,9 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.compat import GUID
 from app.core.database import Base
 
 
@@ -22,7 +24,7 @@ class TaskDefinition(Base):
     __tablename__ = "task_definitions"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
@@ -47,7 +49,7 @@ class TaskDefinition(Base):
     timeout_seconds: Mapped[int] = mapped_column(Integer, default=3600)
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     created_by: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+        GUID(), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(
@@ -62,10 +64,10 @@ class TaskInstance(Base):
     __tablename__ = "task_instances"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     task_def_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("task_definitions.id", ondelete="CASCADE"), nullable=False, index=True
+        GUID(), ForeignKey("task_definitions.id", ondelete="CASCADE"), nullable=False, index=True
     )
     status: Mapped[str] = mapped_column(
         String(32), default="pending", index=True
@@ -75,14 +77,14 @@ class TaskInstance(Base):
     )  # manual, scheduled, api
     parameters: Mapped[Optional[dict]] = mapped_column(JSON)  # Runtime parameters
     approved_by: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+        GUID(), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     approved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     summary: Mapped[Optional[str]] = mapped_column(Text)  # Execution summary
     created_by: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+        GUID(), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(
@@ -102,13 +104,13 @@ class TaskStepLog(Base):
     __tablename__ = "task_step_logs"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     task_instance_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("task_instances.id", ondelete="CASCADE"), nullable=False, index=True
+        GUID(), ForeignKey("task_instances.id", ondelete="CASCADE"), nullable=False, index=True
     )
     server_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("servers.id", ondelete="CASCADE"), nullable=False, index=True
+        GUID(), ForeignKey("servers.id", ondelete="CASCADE"), nullable=False, index=True
     )
     step_number: Mapped[int] = mapped_column(Integer, nullable=False)
     step_name: Mapped[str] = mapped_column(String(128), nullable=False)
@@ -135,7 +137,7 @@ class FirmwarePackage(Base):
     __tablename__ = "firmware_packages"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     brand: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
@@ -151,7 +153,7 @@ class FirmwarePackage(Base):
     supported_models: Mapped[Optional[list]] = mapped_column(JSON)  # List of supported server models
     release_notes: Mapped[Optional[str]] = mapped_column(Text)
     uploaded_by: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+        GUID(), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(
@@ -163,10 +165,10 @@ class InspectionPolicy(Base):
     __tablename__ = "inspection_policies"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     task_def_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("task_definitions.id", ondelete="CASCADE"), nullable=False, unique=True
+        GUID(), ForeignKey("task_definitions.id", ondelete="CASCADE"), nullable=False, unique=True
     )
     schedule: Mapped[str] = mapped_column(String(64), nullable=False)  # Cron expression
     target_filter: Mapped[dict] = mapped_column(JSON, nullable=False)

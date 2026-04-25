@@ -9,7 +9,6 @@ from typing import Any, Dict, List
 
 from app.modules.knowledge.models import FirmwareCompatibility, SELEventCode
 
-
 # ---------------------------------------------------------------------------
 # SEL 事件码种子数据
 # ---------------------------------------------------------------------------

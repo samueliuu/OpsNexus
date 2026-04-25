@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional
 
 from app.adapters.base.adapter import ServerAdapter
-from app.adapters.base.redfish import RedfishClient, REDFISH_POWER_ACTIONS, REDFISH_POWER_STATE_MAP
+from app.adapters.base.redfish import REDFISH_POWER_ACTIONS, REDFISH_POWER_STATE_MAP, RedfishClient
 from app.adapters.base.types import (
     BMCConnection,
     Fan,
@@ -18,7 +18,7 @@ from app.adapters.base.types import (
     StorageController,
     SystemInfo,
 )
-from app.core.exceptions import BMCConnectionException
+from app.core.exceptions import BMCAuthenticationException
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)

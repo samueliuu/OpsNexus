@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
@@ -12,9 +14,9 @@ from sqlalchemy import (
     String,
     Text,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.compat import GUID
 from app.core.database import Base
 
 
@@ -22,7 +24,7 @@ class MetricDefinition(Base):
     __tablename__ = "metric_definitions"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     name: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
     display_name: Mapped[str] = mapped_column(String(128), nullable=False)
@@ -49,18 +51,18 @@ class MetricData(Base):
         DateTime(timezone=True), primary_key=True, default=lambda: datetime.now(timezone.utc)
     )
     server_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("servers.id", ondelete="CASCADE"), primary_key=True
+        GUID(), ForeignKey("servers.id", ondelete="CASCADE"), primary_key=True
     )
     metric_name: Mapped[str] = mapped_column(String(64), primary_key=True)
     value: Mapped[float] = mapped_column(Float, nullable=False)
-    labels: Mapped[Optional[dict]] = mapped_column(JSONB)
+    labels: Mapped[Optional[dict]] = mapped_column(JSON)
 
 
 class AlertRule(Base):
     __tablename__ = "alert_rules"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
@@ -77,7 +79,7 @@ class AlertRule(Base):
     notification_channels: Mapped[Optional[list]] = mapped_column(JSON)  # Channel IDs
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     created_by: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+        GUID(), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(
@@ -92,13 +94,13 @@ class AlertEvent(Base):
     __tablename__ = "alert_events"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     rule_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("alert_rules.id", ondelete="CASCADE"), nullable=False, index=True
+        GUID(), ForeignKey("alert_rules.id", ondelete="CASCADE"), nullable=False, index=True
     )
     server_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("servers.id", ondelete="CASCADE"), nullable=False, index=True
+        GUID(), ForeignKey("servers.id", ondelete="CASCADE"), nullable=False, index=True
     )
     severity: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
     status: Mapped[str] = mapped_column(
@@ -110,7 +112,7 @@ class AlertEvent(Base):
     triggered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     acknowledged_by: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+        GUID(), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     acknowledged_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     notification_sent: Mapped[bool] = mapped_column(Boolean, default=False)

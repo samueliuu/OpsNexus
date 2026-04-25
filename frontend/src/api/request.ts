@@ -1,5 +1,4 @@
 import axios, { type InternalAxiosRequestConfig, type AxiosResponse } from 'axios'
-import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 
 declare module 'axios' {
@@ -73,12 +72,6 @@ api.interceptors.response.use(
         authStore.logout()
         return Promise.reject(new Error('Authentication failed'))
       }
-    } else if (error.response?.data?.error?.message) {
-      ElMessage.error(error.response.data.error.message)
-    } else if (error.response?.data?.detail) {
-      ElMessage.error(error.response.data.detail)
-    } else {
-      ElMessage.error(error.message || '请求失败')
     }
     return Promise.reject(error)
   }

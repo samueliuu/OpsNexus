@@ -1,10 +1,15 @@
 <template>
   <div class="not-found">
+    <i class="pi pi-exclamation-circle" style="font-size: 5rem; color: #9ca3af"></i>
     <h1>404</h1>
     <p>页面未找到</p>
-    <el-button type="primary" @click="$router.push('/')">返回首页</el-button>
+    <Button label="返回首页" icon="pi pi-home" @click="$router.push('/')" />
   </div>
 </template>
+
+<script setup lang="ts">
+import Button from 'primevue/button'
+</script>
 
 <style scoped>
 .not-found {
@@ -13,15 +18,16 @@
   align-items: center;
   justify-content: center;
   height: 60vh;
+  gap: 8px;
 }
 .not-found h1 {
   font-size: 72px;
-  color: #909399;
+  color: #9ca3af;
   margin: 0;
 }
 .not-found p {
   font-size: 18px;
-  color: #909399;
-  margin: 16px 0 24px;
+  color: #9ca3af;
+  margin: 0 0 16px;
 }
 </style>

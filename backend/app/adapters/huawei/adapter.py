@@ -1,20 +1,11 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from app.adapters.base.redfish_adapter import RedfishAdapter, _safe_int
 from app.adapters.base.registry import register_adapter
 from app.adapters.base.types import (
-    BMCConnection,
-    Fan,
     FirmwareInfo,
     HealthStatus,
-    MemoryModule,
-    NetworkAdapter,
-    PowerAction,
-    PowerState,
-    PowerSupply,
-    Processor,
     SELEntry,
-    SensorData,
     StorageController,
     SystemInfo,
 )

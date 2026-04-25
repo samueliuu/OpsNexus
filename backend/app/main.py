@@ -12,15 +12,8 @@ from app.core.config import settings
 from app.core.database import AsyncSessionLocal, close_db, init_db
 from app.core.events import event_bus
 from app.core.exceptions import (
-    AuthenticationException,
-    AuthorizationException,
-    BMCAuthenticationException,
-    BMCConnectionException,
-    ConflictException,
-    NotFoundException,
     OpsNexusException,
     RateLimitException,
-    ValidationException,
     general_exception_handler,
     http_exception_handler,
     opsnexus_exception_handler,
@@ -28,8 +21,8 @@ from app.core.exceptions import (
 )
 from app.core.logging import LoggingMiddleware, get_logger, setup_logging
 from app.core.middleware import RateLimitMiddleware
-from app.modules import asset, audit, autoops, knowledge, monitor, outband, system
 from app.integrations import router as netbox_router
+from app.modules import asset, audit, autoops, knowledge, monitor, outband, system
 
 logger = get_logger(__name__)
 
@@ -94,6 +87,7 @@ class AuditMiddleware:
             if auth_header.startswith("Bearer "):
                 try:
                     from uuid import UUID as UUIDType
+
                     from app.core.security import decode_token
                     token_data = decode_token(auth_header.split(" ")[1])
                     if token_data:
@@ -170,8 +164,14 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down gracefully...")
-    await event_bus.disconnect()
-    await close_redis()
+    try:
+        await event_bus.disconnect()
+    except Exception as e:
+        logger.warning(f"Event bus disconnect failed: {e}")
+    try:
+        await close_redis()
+    except Exception as e:
+        logger.warning(f"Redis close failed: {e}")
     await close_db()
     logger.info("Shutdown complete")
 
@@ -179,7 +179,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
-    description="服务器运维知识助手平台",
+    description="衡驭智能服务器运维系统",
     lifespan=lifespan,
 )
 

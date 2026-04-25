@@ -1,10 +1,11 @@
+from __future__ import annotations
+
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
 
 from sqlalchemy import (
     JSON,
-    BigInteger,
     Boolean,
     DateTime,
     ForeignKey,
@@ -13,9 +14,9 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.compat import GUID
 from app.core.database import Base
 
 
@@ -23,7 +24,7 @@ class DataCenter(Base):
     __tablename__ = "data_centers"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     code: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
@@ -47,10 +48,10 @@ class Rack(Base):
     __table_args__ = (UniqueConstraint("data_center_id", "code"),)
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     data_center_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("data_centers.id", ondelete="CASCADE"), nullable=False, index=True
+        GUID(), ForeignKey("data_centers.id", ondelete="CASCADE"), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(64), nullable=False)
     code: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
@@ -72,10 +73,10 @@ class Server(Base):
     __tablename__ = "servers"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     rack_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("racks.id", ondelete="SET NULL"), nullable=True, index=True
+        GUID(), ForeignKey("racks.id", ondelete="SET NULL"), nullable=True, index=True
     )
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     hostname: Mapped[Optional[str]] = mapped_column(String(128), unique=True)
@@ -107,7 +108,7 @@ class Server(Base):
     rack_position: Mapped[Optional[int]] = mapped_column(Integer)  # Starting U position
     rack_height: Mapped[int] = mapped_column(Integer, default=1)  # U height occupied
     owner_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+        GUID(), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
     )
     department: Mapped[Optional[str]] = mapped_column(String(64))
     description: Mapped[Optional[str]] = mapped_column(Text)
@@ -134,10 +135,10 @@ class BMCCredential(Base):
     __tablename__ = "bmc_credentials"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     server_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("servers.id", ondelete="CASCADE"),
         nullable=False,
         unique=True,

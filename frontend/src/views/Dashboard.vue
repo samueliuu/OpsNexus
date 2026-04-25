@@ -1,99 +1,108 @@
 <template>
   <div class="dashboard">
-    <el-row :gutter="20" class="stat-row">
-      <el-col :span="6" v-for="stat in stats" :key="stat.label">
-        <el-card class="stat-card" shadow="hover">
+    <div class="stat-grid">
+      <Card v-for="stat in stats" :key="stat.label">
+        <template #content>
           <div class="stat-content">
-            <div class="stat-info">
+            <div>
               <div class="stat-value" :style="{ color: stat.color }">{{ stat.value }}</div>
               <div class="stat-label">{{ stat.label }}</div>
             </div>
-            <el-icon :size="40" :style="{ color: stat.color }"><component :is="stat.icon" /></el-icon>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-    <el-row :gutter="20">
-      <el-col :span="16">
-        <el-card shadow="hover">
-          <template #header><span>服务器概览</span></template>
-          <el-table :data="serverSummaries" stripe style="width: 100%" max-height="500" v-loading="loading">
-            <el-table-column prop="server_name" label="服务器" min-width="120" />
-            <el-table-column label="健康状态" width="100">
-              <template #default="{ row }">
-                <el-tag :type="healthTagType(row.health_status)" size="small">{{ healthLabel(row.health_status) }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="CPU温度" width="100">
-              <template #default="{ row }">
-                <span v-if="row.cpu_temperature != null">{{ row.cpu_temperature.toFixed(1) }}°C</span>
-                <span v-else class="text-muted">-</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="CPU使用率" width="120">
-              <template #default="{ row }">
-                <el-progress v-if="row.cpu_usage != null" :percentage="Math.round(row.cpu_usage)" :stroke-width="14" :color="usageColor(row.cpu_usage)" />
-                <span v-else class="text-muted">-</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="内存使用率" width="120">
-              <template #default="{ row }">
-                <el-progress v-if="row.memory_usage != null" :percentage="Math.round(row.memory_usage)" :stroke-width="14" :color="usageColor(row.memory_usage)" />
-                <span v-else class="text-muted">-</span>
-              </template>
-            </el-table-column>
-            <el-table-column label="功耗" width="100">
-              <template #default="{ row }">
-                <span v-if="row.power_consumption != null">{{ Math.round(row.power_consumption) }}W</span>
-                <span v-else class="text-muted">-</span>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </el-col>
-      <el-col :span="8">
-        <el-card shadow="hover" class="alert-card">
-          <template #header>
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span>活跃告警</span>
-              <el-button text type="primary" @click="$router.push('/monitor/alert-events')">查看全部</el-button>
+            <div class="stat-icon" :style="{ background: stat.bg }">
+              <i :class="stat.icon" :style="{ color: stat.color }"></i>
             </div>
-          </template>
-          <div v-if="alertEvents.length === 0" class="empty-alert">
-            <el-icon :size="48" color="#67c23a"><CircleCheck /></el-icon>
+          </div>
+        </template>
+      </Card>
+    </div>
+    <div class="content-grid-2">
+      <Card>
+        <template #title>服务器概览</template>
+        <template #content>
+          <DataTable :value="serverSummaries" stripedRows :loading="loading" :rows="10" tableStyle="min-width: 50rem">
+            <Column field="server_name" header="服务器" style="min-width: 120px" />
+            <Column header="健康状态" style="width: 100px">
+              <template #body="{ data }">
+                <Tag :value="healthLabel(data.health_status)" :severity="healthSeverity(data.health_status)" />
+              </template>
+            </Column>
+            <Column header="CPU温度" style="width: 100px">
+              <template #body="{ data }">
+                <span v-if="data.cpu_temperature != null">{{ data.cpu_temperature.toFixed(1) }}°C</span>
+                <span v-else class="text-muted">-</span>
+              </template>
+            </Column>
+            <Column header="CPU使用率" style="width: 140px">
+              <template #body="{ data }">
+                <ProgressBar v-if="data.cpu_usage != null" :value="Math.round(data.cpu_usage)" :showValue="true" :style="{ height: '14px' }" />
+                <span v-else class="text-muted">-</span>
+              </template>
+            </Column>
+            <Column header="内存使用率" style="width: 140px">
+              <template #body="{ data }">
+                <ProgressBar v-if="data.memory_usage != null" :value="Math.round(data.memory_usage)" :showValue="true" :style="{ height: '14px' }" />
+                <span v-else class="text-muted">-</span>
+              </template>
+            </Column>
+            <Column header="功耗" style="width: 100px">
+              <template #body="{ data }">
+                <span v-if="data.power_consumption != null">{{ Math.round(data.power_consumption) }}W</span>
+                <span v-else class="text-muted">-</span>
+              </template>
+            </Column>
+          </DataTable>
+        </template>
+      </Card>
+      <Card>
+        <template #title>
+          <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+            <span>活跃告警</span>
+            <Button label="查看全部" link @click="$router.push('/monitor/alert-events')" />
+          </div>
+        </template>
+        <template #content>
+          <div v-if="alertEvents.length === 0" class="empty-state">
+            <i class="pi pi-check-circle" style="color: var(--success)"></i>
             <p>暂无活跃告警</p>
           </div>
           <div v-else class="alert-list">
             <div v-for="event in alertEvents" :key="event.id" class="alert-item" :class="`alert-${event.severity}`">
               <div class="alert-header">
-                <el-tag :type="severityTagType(event.severity)" size="small">{{ event.severity }}</el-tag>
+                <Tag :value="event.severity" :severity="severitySeverity(event.severity)" />
                 <span class="alert-server">{{ event.server_name || event.server_id }}</span>
               </div>
               <div class="alert-summary">{{ event.summary }}</div>
               <div class="alert-time">{{ formatTime(event.triggered_at) }}</div>
             </div>
           </div>
-        </el-card>
-      </el-col>
-    </el-row>
+        </template>
+      </Card>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { monitorApi } from '@/api/monitor'
-import { ElMessage } from 'element-plus'
+import { useToast } from 'primevue/usetoast'
 import dayjs from 'dayjs'
+import Card from 'primevue/card'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import Tag from 'primevue/tag'
+import ProgressBar from 'primevue/progressbar'
+import Button from 'primevue/button'
 
+const toast = useToast()
 const loading = ref(false)
 const serverSummaries = ref<any[]>([])
 const alertEvents = ref<any[]>([])
 
 const stats = ref([
-  { label: '服务器总数', value: 0, icon: 'Monitor', color: '#409eff' },
-  { label: '在线服务器', value: 0, icon: 'CircleCheck', color: '#67c23a' },
-  { label: '严重告警', value: 0, icon: 'WarningFilled', color: '#f56c6c' },
-  { label: '警告告警', value: 0, icon: 'Warning', color: '#e6a23c' },
+  { label: '服务器总数', value: 0, icon: 'pi pi-server', color: 'var(--brand-primary)', bg: 'rgba(37,99,235,0.08)' },
+  { label: '在线服务器', value: 0, icon: 'pi pi-check-circle', color: 'var(--success)', bg: 'rgba(16,185,129,0.08)' },
+  { label: '严重告警', value: 0, icon: 'pi pi-exclamation-triangle', color: 'var(--danger)', bg: 'rgba(239,68,68,0.08)' },
+  { label: '警告告警', value: 0, icon: 'pi pi-exclamation-circle', color: 'var(--warning)', bg: 'rgba(245,158,11,0.08)' },
 ])
 
 onMounted(async () => {
@@ -110,25 +119,22 @@ onMounted(async () => {
     stats.value[2].value = data.critical_alerts ?? 0
     stats.value[3].value = data.warning_alerts ?? 0
     alertEvents.value = alertRes.data.items || []
-  } catch { ElMessage.error('加载仪表盘数据失败') } finally {
+  } catch {
+    toast.add({ severity: 'error', summary: '错误', detail: '加载仪表盘数据失败', life: 3000 })
+  } finally {
     loading.value = false
   }
 })
 
-function healthTagType(status: string) {
-  const map: Record<string, string> = { healthy: 'success', alerting: 'danger', offline: 'info', unknown: 'warning' }
-  return map[status] || 'info'
+function healthSeverity(status: string) {
+  const map: Record<string, string> = { healthy: 'success', alerting: 'danger', offline: 'secondary', unknown: 'warning' }
+  return map[status] || 'secondary'
 }
 function healthLabel(status: string) {
   const map: Record<string, string> = { healthy: '健康', alerting: '告警', offline: '离线', unknown: '未知' }
   return map[status] || status
 }
-function usageColor(val: number) {
-  if (val >= 90) return '#f56c6c'
-  if (val >= 70) return '#e6a23c'
-  return '#67c23a'
-}
-function severityTagType(severity: string) {
+function severitySeverity(severity: string) {
   const map: Record<string, string> = { critical: 'danger', warning: 'warning', info: 'info' }
   return map[severity] || 'info'
 }
@@ -136,21 +142,34 @@ function formatTime(t: string) { return t ? dayjs(t).format('MM-DD HH:mm') : '-'
 </script>
 
 <style scoped>
-.stat-row { margin-bottom: 20px; }
-.stat-card { cursor: default; }
-.stat-content { display: flex; justify-content: space-between; align-items: center; }
-.stat-value { font-size: 32px; font-weight: 700; }
-.stat-label { font-size: 14px; color: #909399; margin-top: 4px; }
-.text-muted { color: #c0c4cc; }
-.alert-card { height: 100%; }
-.empty-alert { text-align: center; padding: 40px 0; color: #909399; }
-.alert-list { max-height: 460px; overflow-y: auto; }
-.alert-item { padding: 12px; border-radius: 6px; margin-bottom: 8px; border-left: 3px solid; }
-.alert-critical { border-color: #f56c6c; background: #fef0f0; }
-.alert-warning { border-color: #e6a23c; background: #fdf6ec; }
-.alert-info { border-color: #909399; background: #f4f4f5; }
-.alert-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-.alert-server { font-weight: 600; font-size: 13px; }
-.alert-summary { font-size: 13px; color: #606266; margin-bottom: 4px; }
-.alert-time { font-size: 12px; color: #909399; }
+.stat-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.stat-label {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+.stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stat-icon i {
+  font-size: 1.25rem;
+}
+.alert-list {
+  max-height: 460px;
+  overflow-y: auto;
+}
 </style>

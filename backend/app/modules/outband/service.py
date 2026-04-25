@@ -11,13 +11,12 @@ from app.adapters import AdapterRegistry, BMCConnection, PowerAction
 from app.core.cache import Cache, DistributedLock, get_redis
 from app.core.config import settings
 from app.core.exceptions import (
-    BMCConnectionException,
     NotFoundException,
     ValidationException,
 )
-from app.core.security import decrypt_value
 from app.core.logging import get_logger
-from app.modules.asset.models import BMCCredential, Server
+from app.core.security import decrypt_value
+from app.modules.asset.models import Server
 from app.modules.asset.repository import BMCCredentialRepository, ServerRepository
 from app.modules.outband.models import FirmwareInventory, KVMSession, SELLog
 
@@ -430,7 +429,7 @@ class SELLogService:
             return 0
         result = await self.session.execute(
             update(SELLog)
-            .where(SELLog.id.in_(entry_ids), SELLog.is_acknowledged == False)
+            .where(SELLog.id.in_(entry_ids), SELLog.is_acknowledged.is_(False))
             .values(is_acknowledged=True, acknowledged_by=user_id, acknowledged_at=datetime.now(timezone.utc))
         )
         await self.session.flush()

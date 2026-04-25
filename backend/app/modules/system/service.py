@@ -1,6 +1,6 @@
 import json
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
 
@@ -38,13 +38,13 @@ from app.modules.system.schemas import (
     LoginRequest,
     NotificationChannelCreate,
     NotificationChannelUpdate,
+    RegisterRequest,
     RoleCreate,
     RoleUpdate,
     SystemConfigCreate,
     SystemConfigUpdate,
     UserCreate,
     UserUpdate,
-    RegisterRequest,
 )
 
 
@@ -396,7 +396,6 @@ class SystemConfigService:
         return await self.config_repo.create(config)
 
     async def update_config(self, config_id: UUID, config_data: SystemConfigUpdate) -> SystemConfig:
-        config = await self.get_config(config_id)
         update_data = config_data.model_dump(exclude_unset=True)
         return await self.config_repo.update(config_id, **update_data)
 
@@ -432,7 +431,6 @@ class NotificationChannelService:
     async def update_channel(
         self, channel_id: UUID, channel_data: NotificationChannelUpdate
     ) -> NotificationChannel:
-        channel = await self.get_channel(channel_id)
         update_data = channel_data.model_dump(exclude_unset=True)
         if "config" in update_data and isinstance(update_data["config"], str):
             update_data["config"] = json.loads(update_data["config"])
