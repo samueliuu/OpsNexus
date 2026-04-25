@@ -2,7 +2,6 @@
 
 <template>
     <div class="layout-footer">
-        OpsNexus by
-        <a href="#" target="_blank" rel="noopener noreferrer" class="text-primary font-bold hover:underline">衡驭智能</a>
+        衡驭OpsNexus智能服务器运维系统 v1.1.0
     </div>
 </template>

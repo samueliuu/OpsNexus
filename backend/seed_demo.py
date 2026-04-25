@@ -292,7 +292,7 @@ async def seed_all():
         # --- 系统配置 ---
         for i, (k, v, vt, d) in enumerate([
             ("system.name", "OpsNexus 运维管理平台", "string", "系统名称"),
-            ("system.version", "0.1.1", "string", "系统版本"),
+            ("system.version", "1.1.0", "string", "系统版本"),
             ("monitor.collect_interval", "60", "int", "监控数据采集间隔(秒)"),
             ("monitor.retention_days", "90", "int", "监控数据保留天数"),
             ("alert.notification_enabled", "true", "bool", "是否启用告警通知"),

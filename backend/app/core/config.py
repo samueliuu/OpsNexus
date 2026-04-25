@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     debug: bool = False
 
     app_name: str = "衡驭OpsNexus智能服务器运维系统"
-    app_version: str = "0.1.1"
+    app_version: str = "1.1.0"
 
     database_url: str = "postgresql+asyncpg://opsnexus:opsnexus_dev@localhost:5432/opsnexus"
     db_pool_size: int = 20
