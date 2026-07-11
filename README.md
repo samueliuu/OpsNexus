@@ -140,10 +140,8 @@ cd frontend && npm run lint
 
 [Apache License 2.0](LICENSE)
 
-Copyright 2026 南京诚臻晶睿信息技术有限公司
-
 ## 联系方式
 
 - 项目地址：https://github.com/samueliuu/OpsNexus
 - 问题反馈：https://github.com/samueliuu/OpsNexus/issues
-- 邮箱：support@pricenexus.cn
+- 
